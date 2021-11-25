@@ -1,9 +1,10 @@
-import { debounce } from 'lodash-es';
 import { ref, reactive, computed, watch, onActivated } from 'vue';
 
+import { debounce } from 'lodash-es';
+
 export enum EListPlatform {
-  'DESKTOP' = 'DESKTOP',
-  'MOBILE' = 'MOBILE',
+  'Desktop' = 'Desktop',
+  'Mobile' = 'Mobile',
 }
 
 export type IUseListQuery = {
@@ -31,7 +32,7 @@ export interface IBuildUseListOptions<T, P> {
 
 export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
   const {
-    platform = EListPlatform.DESKTOP,
+    platform = EListPlatform.Desktop,
     immediate = true,
     duration = 200,
     relation = [],
@@ -42,7 +43,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
 
   return function useList(props: P, defaultQuery?: IUseListQuery) {
     const inited = ref(false);
-    const loading = ref(false);
+    const loading = ref(immediate);
     const loadingMore = ref(false);
     const list = ref<Array<T>>([]);
 
@@ -167,7 +168,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
     onActivated(function() {
       if (immediate) {
         if (inited.value) {
-          onRefresh(platform === EListPlatform.MOBILE);
+          onRefresh(platform === EListPlatform.Mobile);
         }
         inited.value = true;
       }

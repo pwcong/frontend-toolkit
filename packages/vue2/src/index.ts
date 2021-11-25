@@ -1,2 +1,2 @@
-export * from './hoc';
-export * from './mixin';
+export * from './hocs';
+export * from './mixins';

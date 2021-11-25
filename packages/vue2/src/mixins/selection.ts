@@ -1,6 +1,6 @@
 export enum ESelectionValueType {
-  'OBJECT' = 'OBJECT',
-  'ARRAY' = 'ARRAY',
+  'Object' = 'Object',
+  'Array' = 'Array',
 }
 
 export interface IBuildSelectionMixinOptions {
@@ -14,13 +14,13 @@ export function buildSelectionMixin(options: IBuildSelectionMixinOptions) {
 
   let defaultValue = options.defaultValue;
   if (defaultValue === undefined) {
-    defaultValue = valueType === ESelectionValueType.ARRAY ? [] : {};
+    defaultValue = valueType === ESelectionValueType.Array ? [] : {};
   }
 
   const getValue =
     options.getValue ||
     ((_, value) => {
-      if (valueType === ESelectionValueType.ARRAY) {
+      if (valueType === ESelectionValueType.Array) {
         return [].concat(defaultValue).concat(value || []);
       }
       return Object.assign({}, defaultValue, value || {});

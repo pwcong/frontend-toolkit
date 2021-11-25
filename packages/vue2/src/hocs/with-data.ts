@@ -1,7 +1,7 @@
-import { debounce } from 'lodash-es';
-import omit from 'omit.js';
+import { debounce, omit } from 'lodash-es';
 
 export interface IBuildWithDataOptions<T> {
+  immediate?: boolean;
   property?: string;
   properties?: { [key: string]: any };
   data: T;
@@ -9,7 +9,12 @@ export interface IBuildWithDataOptions<T> {
 }
 
 export function buildWithData<T>(options: IBuildWithDataOptions<T>) {
-  const { property = 'data', data, properties = {} } = options;
+  const {
+    immediate = true,
+    property = 'data',
+    data,
+    properties = {},
+  } = options;
 
   const getData = options.getData || (() => Promise.resolve(data));
 
@@ -21,20 +26,24 @@ export function buildWithData<T>(options: IBuildWithDataOptions<T>) {
       data() {
         return {
           [property]: data,
-          onInitData: null,
+          onFetch: null,
         };
       },
       created() {
         const ctx: any = this;
-        ctx.onInitData = debounce(function() {
+
+        ctx.onFetch = debounce(function() {
           getData(ctx, ctx.$props).then(data => (ctx[property] = data));
         }, 200);
-        ctx.onInitData();
+
+        if (immediate) {
+          ctx.onFetch();
+        }
       },
       watch: {
         ...Object.keys(properties).reduce((p, c) => {
           p[c] = function() {
-            this.onInitData();
+            this.onFetch();
           };
           return p;
         }, {} as { [key: string]: any }),

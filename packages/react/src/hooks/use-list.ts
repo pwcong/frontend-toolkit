@@ -1,9 +1,9 @@
 import React from 'react';
-import { debounce } from 'lodash-es';
+import { debounce, omit } from 'lodash';
 
 export enum EListPlatform {
-  'DESKTOP' = 'DESKTOP',
-  'MOBILE' = 'MOBILE',
+  'Desktop' = 'Desktop',
+  'Mobile' = 'Mobile',
 }
 
 export interface IUseListData<T> {
@@ -24,54 +24,56 @@ export interface IBuildUseListOptions<T, P> {
   duration?: number;
   relation?: Array<string>;
   properties?: Array<string | { key: string; value: any }>;
-  getQuery?: (
-    props: P,
-    query: { [key: string]: any }
-  ) => { [key: string]: any };
-  getData?: (
-    props: P,
-    query: { [key: string]: any }
-  ) => Promise<IUseListData<T>>;
+  getQuery?: (query: any, props: P) => any;
+  getData?: (query: any, props: P) => Promise<IUseListData<T>>;
 }
 
-export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
+export function buildUseList<T, P = Record<string, unknown>>(
+  options: IBuildUseListOptions<T, P>
+) {
   const {
-    // platform = EListPlatform.DESKTOP,
+    // platform = EListPlatform.Desktop,
     immediate = true,
     duration = 200,
     relation = [],
     properties = [],
-    getQuery = (_, query) => query,
+    getQuery = query => query,
     getData = () => Promise.resolve({ data: [], totalSize: 0 }),
   } = options;
 
-  return function useList(props: P, defaultQuery?: IUseListQuery) {
+  return function useList<C = Record<string, unknown>>(
+    props: P,
+    _defaultQuery?: C & Partial<IUseListQuery>
+  ) {
     const [inited, setInited] = React.useState(false);
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState(immediate);
     const [loadingMore, setLoadingMore] = React.useState(false);
 
     const [list, setList] = React.useState<Array<T>>([]);
-    const [query, setQuery] = React.useState(
-      properties.reduce((p, c) => {
+
+    const defaultQuery = React.useMemo(
+      () => ({
+        pageNo: 1,
+        pageSize: 10,
+        ..._defaultQuery,
+      }),
+      []
+    );
+    const [pageNo, setPageNo] = React.useState(defaultQuery.pageNo);
+    const [pageSize, setPageSize] = React.useState(defaultQuery.pageSize);
+
+    const [query, setQuery] = React.useState({
+      ...properties.reduce((p, c) => {
         if (typeof c === 'object') {
           p[c.key] = c.value;
         } else {
           p[c] = undefined;
         }
         return p;
-      }, {} as { [key: string]: any })
-    );
+      }, {} as any),
+      ...omit(defaultQuery, ['pageNo', 'pageSize']),
+    });
 
-    defaultQuery = Object.assign(
-      {
-        pageNo: 1,
-        pageSize: 10,
-      },
-      defaultQuery
-    );
-
-    const [pageNo, setPageNo] = React.useState(defaultQuery.pageNo);
-    const [pageSize, setPageSize] = React.useState(defaultQuery.pageSize);
     const [totalSize, setTotalSize] = React.useState(0);
     // 判断是否有下一页
     const hasMore = React.useMemo(
@@ -93,47 +95,45 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     });
 
     const onLoad = React.useCallback(
-      debounce(function(query) {
+      debounce(_query => {
         setLoading(true);
         ref.current.loading = true;
 
-        setTimeout(async function() {
+        setTimeout(async () => {
           try {
-            query = getQuery(
-              props,
-              Object.assign(
-                {
-                  pageNo: ref.current.pageNo,
-                  pageSize: ref.current.pageSize,
-                },
-                query
-              )
+            const newQuery = getQuery(
+              {
+                pageNo: ref.current.pageNo,
+                pageSize: ref.current.pageSize,
+                ..._query,
+              },
+              ref.current.props
             );
 
-            const targetQuery = Object.keys(query).reduce((p, c) => {
-              const v = query[c];
-              if (v !== '' && v !== undefined && v !== null) {
+            const targetQuery = Object.keys(newQuery).reduce((p, c) => {
+              const v = newQuery[c];
+              if (v !== undefined && v !== null) {
                 p[c] = v;
               }
               return p;
-            }, {} as { [key: string]: any });
+            }, {} as any);
 
-            const { data = [], totalSize: totalSize = 0 } = await getData(
-              props,
-              targetQuery
+            const { data = [], totalSize: _totalSize = 0 } = await getData(
+              targetQuery,
+              ref.current.props
             );
 
-            setTotalSize(totalSize);
-            ref.current.totalSize = totalSize;
+            setTotalSize(_totalSize);
+            ref.current.totalSize = _totalSize;
 
-            let list: Array<T> = [];
+            let _list: Array<T> = [];
             if (ref.current.loadingMore) {
-              list = ref.current.list.concat(data);
+              _list = ref.current.list.concat(data);
             } else {
-              list = data;
+              _list = data;
             }
-            setList(list);
-            ref.current.list = list;
+            setList(_list);
+            ref.current.list = _list;
           } catch (e) {
             console.error(e);
           } finally {
@@ -148,13 +148,13 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     );
 
     const onRefresh = React.useCallback(
-      debounce(function(reload?: boolean) {
+      debounce((reload?: boolean) => {
         if (ref.current.loading) {
           return;
         }
 
-        reload = reload === undefined ? true : reload;
-        if (reload) {
+        const _reload = reload === undefined ? true : reload;
+        if (_reload) {
           setPageNo(1);
           ref.current.pageNo = 1;
         }
@@ -165,7 +165,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     );
 
     const onLoadMore = React.useCallback(
-      debounce(function() {
+      debounce(() => {
         if (ref.current.loading) {
           return;
         }
