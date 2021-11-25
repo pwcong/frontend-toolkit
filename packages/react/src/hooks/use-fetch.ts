@@ -52,11 +52,8 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       isUnmounted: false,
     });
 
-    const onLoad = React.useCallback(
+    const onFetch = React.useCallback(
       debounce(_query => {
-        setLoading(true);
-        ref.current.loading = true;
-
         setTimeout(async () => {
           try {
             const newQuery = getQuery(
@@ -89,42 +86,48 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       [ref]
     );
 
-    const onRefresh = React.useCallback(
-      debounce(() => {
-        if (ref.current.loading) {
+    const onLoad = React.useCallback(
+      (_query, _options?: { force?: boolean }) => {
+        if (ref.current.loading && !_options?.force) {
           return;
         }
+        setLoading(true);
+        ref.current.loading = true;
 
-        onLoad(ref.current.query);
-      }, duration),
-      [ref, onLoad]
+        onFetch(_query);
+      },
+      [ref, onFetch]
     );
 
+    const onRefresh = React.useCallback(() => {
+      onLoad(ref.current.query);
+    }, [ref, onLoad]);
+
     React.useEffect(() => {
-      ref.current.query = query;
-      if (ref.current.inited) {
-        onRefresh();
+      if (!ref.current.inited) {
+        return;
       }
+      ref.current.query = query;
+      onRefresh();
     }, [ref, query, onRefresh]);
 
     React.useEffect(() => {
+      if (!ref.current.inited) {
+        return;
+      }
       const oldProps = ref.current.props;
       ref.current.props = props;
-      if (ref.current.inited) {
-        relation.forEach(p => {
-          if ((oldProps as any)[p] !== (props as any)[p]) {
-            onRefresh();
-          }
-        });
+      if (relation.find(p => (oldProps as any)[p] !== (props as any)[p])) {
+        onRefresh();
       }
-    }, [ref, props]);
+    }, [ref, props, onRefresh]);
 
     React.useEffect(() => {
       setInited(true);
       ref.current.inited = true;
 
       if (immediate) {
-        onLoad(ref.current.query);
+        onLoad(ref.current.query, { force: true });
       }
 
       return () => {

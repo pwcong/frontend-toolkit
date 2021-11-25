@@ -31,6 +31,7 @@ export interface IBuildUseListOptions<T, P> {
 export function buildUseList<T, P = Record<string, unknown>>(
   options: IBuildUseListOptions<T, P>
 ) {
+  debugger;
   const {
     // platform = EListPlatform.Desktop,
     immediate = true,
@@ -94,11 +95,27 @@ export function buildUseList<T, P = Record<string, unknown>>(
       isUnmounted: false,
     });
 
-    const onLoad = React.useCallback(
-      debounce(_query => {
-        setLoading(true);
-        ref.current.loading = true;
+    const changeLoading = React.useCallback(
+      (active?: boolean, more?: boolean) => {
+        if (active) {
+          setLoading(true);
+          ref.current.loading = true;
+          if (more) {
+            setLoadingMore(true);
+            ref.current.loadingMore = true;
+          }
+        } else {
+          setLoading(false);
+          ref.current.loading = false;
+          setLoadingMore(false);
+          ref.current.loadingMore = false;
+        }
+      },
+      [ref]
+    );
 
+    const onFetch = React.useCallback(
+      debounce(_query => {
         setTimeout(async () => {
           try {
             const newQuery = getQuery(
@@ -137,22 +154,26 @@ export function buildUseList<T, P = Record<string, unknown>>(
           } catch (e) {
             console.error(e);
           } finally {
-            setLoading(false);
-            ref.current.loading = false;
-            setLoadingMore(false);
-            ref.current.loadingMore = false;
+            changeLoading(false);
           }
         });
       }, duration),
       [ref]
     );
 
-    const onRefresh = React.useCallback(
-      debounce((reload?: boolean) => {
-        if (ref.current.loading) {
+    const onLoad = React.useCallback(
+      (_query, _options?: { more?: boolean; force?: boolean }) => {
+        if (ref.current.loading && !_options?.force) {
           return;
         }
+        changeLoading(true, _options?.more);
+        onFetch(_query);
+      },
+      [ref, onFetch]
+    );
 
+    const onRefresh = React.useCallback(
+      (reload?: boolean) => {
         const _reload = reload === undefined ? true : reload;
         if (_reload) {
           setPageNo(1);
@@ -160,7 +181,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
         }
 
         onLoad(ref.current.query);
-      }, duration),
+      },
       [ref, onLoad]
     );
 
@@ -169,55 +190,55 @@ export function buildUseList<T, P = Record<string, unknown>>(
         if (ref.current.loading) {
           return;
         }
-
-        setLoadingMore(true);
-        ref.current.loadingMore = true;
+        changeLoading(true, true);
 
         setPageNo(ref.current.pageNo + 1);
         ref.current.pageNo++;
       }, duration),
-      []
+      [ref]
     );
 
     React.useEffect(() => {
-      ref.current.pageNo = pageNo;
-      if (ref.current.inited) {
-        onLoad(ref.current.query);
+      if (!ref.current.inited) {
+        return;
       }
+      ref.current.pageNo = pageNo;
+      onLoad(ref.current.query);
     }, [ref, pageNo, onload]);
 
     React.useEffect(() => {
-      ref.current.pageSize = pageSize;
-      if (ref.current.inited) {
-        onRefresh(true);
+      if (!ref.current.inited) {
+        return;
       }
+      ref.current.pageSize = pageSize;
+      onRefresh(true);
     }, [ref, pageSize, onRefresh]);
 
     React.useEffect(() => {
-      ref.current.query = query;
-      if (ref.current.inited) {
-        onRefresh(true);
+      if (!ref.current.inited) {
+        return;
       }
+      ref.current.query = query;
+      onRefresh(true);
     }, [ref, query, onRefresh]);
 
     React.useEffect(() => {
+      if (!ref.current.inited) {
+        return;
+      }
       const oldProps = ref.current.props;
       ref.current.props = props;
-      if (ref.current.inited) {
-        relation.forEach(p => {
-          if ((oldProps as any)[p] !== (props as any)[p]) {
-            onRefresh(true);
-          }
-        });
+      if (relation.find(p => (oldProps as any)[p] !== (props as any)[p])) {
+        onRefresh(true);
       }
-    }, [ref, props]);
+    }, [ref, props, onRefresh]);
 
     React.useEffect(() => {
       setInited(true);
       ref.current.inited = true;
 
       if (immediate) {
-        onLoad(ref.current.query);
+        onLoad(ref.current.query, { force: true });
       }
 
       return () => {
