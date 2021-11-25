@@ -31,7 +31,6 @@ export interface IBuildUseListOptions<T, P> {
 export function buildUseList<T, P = Record<string, unknown>>(
   options: IBuildUseListOptions<T, P>
 ) {
-  debugger;
   const {
     // platform = EListPlatform.Desktop,
     immediate = true,
