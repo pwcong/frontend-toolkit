@@ -110,7 +110,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
           ref.current.loadingMore = false;
         }
       },
-      [ref]
+      []
     );
 
     const onFetch = React.useCallback(
@@ -157,7 +157,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
           }
         });
       }, duration),
-      [ref]
+      []
     );
 
     const onLoad = React.useCallback(
@@ -168,21 +168,18 @@ export function buildUseList<T, P = Record<string, unknown>>(
         changeLoading(true, _options?.more);
         onFetch(_query);
       },
-      [ref, onFetch]
+      []
     );
 
-    const onRefresh = React.useCallback(
-      (reload?: boolean) => {
-        const _reload = reload === undefined ? true : reload;
-        if (_reload) {
-          setPageNo(1);
-          ref.current.pageNo = 1;
-        }
+    const onRefresh = React.useCallback((reload?: boolean) => {
+      const _reload = reload === undefined ? true : reload;
+      if (_reload) {
+        setPageNo(1);
+        ref.current.pageNo = 1;
+      }
 
-        onLoad(ref.current.query);
-      },
-      [ref, onLoad]
-    );
+      onLoad(ref.current.query);
+    }, []);
 
     const onLoadMore = React.useCallback(
       debounce(() => {
@@ -194,7 +191,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
         setPageNo(ref.current.pageNo + 1);
         ref.current.pageNo++;
       }, duration),
-      [ref]
+      []
     );
 
     React.useEffect(() => {
@@ -203,7 +200,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       }
       ref.current.pageNo = pageNo;
       onLoad(ref.current.query);
-    }, [ref, pageNo, onload]);
+    }, [pageNo]);
 
     React.useEffect(() => {
       if (!ref.current.inited) {
@@ -211,7 +208,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       }
       ref.current.pageSize = pageSize;
       onRefresh(true);
-    }, [ref, pageSize, onRefresh]);
+    }, [pageSize]);
 
     React.useEffect(() => {
       if (!ref.current.inited) {
@@ -219,7 +216,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       }
       ref.current.query = query;
       onRefresh(true);
-    }, [ref, query, onRefresh]);
+    }, [query]);
 
     React.useEffect(() => {
       if (!ref.current.inited) {
@@ -230,7 +227,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       if (relation.find(p => (oldProps as any)[p] !== (props as any)[p])) {
         onRefresh(true);
       }
-    }, [ref, props, onRefresh]);
+    }, [props]);
 
     React.useEffect(() => {
       setInited(true);
@@ -243,7 +240,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       return () => {
         ref.current.isUnmounted = true;
       };
-    }, [ref]);
+    }, []);
 
     return [
       {

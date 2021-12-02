@@ -1,23 +1,21 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-interface IBuildUseModalFormOptions<T, P> {
+interface IBuildUseCommonFormOptions<T, P> {
+  immediate?: boolean;
   defaultValue: T;
   getValue?: (prevValue: T, props: P) => Promise<T>;
 }
 
-export function buildUseModalForm<T, P>(
-  options: IBuildUseModalFormOptions<T, P>
+export function buildUseCommonForm<T, P>(
+  options: IBuildUseCommonFormOptions<T, P>
 ) {
-  return function useModalForm(props: P) {
+  return function useCommonForm(props: P) {
     const {
+      immediate = true,
       defaultValue,
       getValue = (prevValue: T) => Promise.resolve(prevValue),
     } = options;
 
-    const [visible, setVisible] = useState(false);
-    const changeVisible = React.useCallback((nextVisible: boolean) => {
-      setVisible(nextVisible);
-    }, []);
     const [value, setValue] = useState(defaultValue);
     const cacheValue = useRef({
       prev: value,
@@ -41,7 +39,7 @@ export function buildUseModalForm<T, P>(
           cacheValue.current.prev,
           cacheProps.current
         );
-        changeValue(nextValue);
+        changeValue(nextValue, true);
         return nextValue;
       } catch (e) {
         throw e;
@@ -59,55 +57,49 @@ export function buildUseModalForm<T, P>(
     }, [props]);
 
     useEffect(() => {
-      if (visible) {
+      if (immediate) {
         fetchValue();
-      } else {
-        resetValue();
       }
-    }, [visible]);
+    }, []);
 
     return [
       {
         value,
         cacheValue,
         loading,
-        visible,
       },
       {
         changeValue,
         fetchValue,
         resetValue,
-        changeVisible,
       },
     ];
   };
 }
 
-export type IModalFormProps<T> = {
+export type ICommonFormProps<T> = {
   value: T;
-  visible: boolean;
   loading: boolean;
   onInit: () => void;
   onOk: (value: T, done?: boolean) => void;
   onCancel: (done?: boolean) => void;
 };
 
-type IWithModalFormProps<T, P = Record<string, unknown>> = P &
-  Partial<IModalFormProps<T>> &
+type IWithCommonFormProps<T, P = Record<string, unknown>> = P &
+  Partial<ICommonFormProps<T>> &
   Partial<{
     onChange: (value: T) => void;
   }>;
 
-export function withModalForm<T, P = Record<string, unknown>>(
+export function withCommonForm<T, P = Record<string, unknown>>(
   Component: any,
-  options: IBuildUseModalFormOptions<T, P>
+  options: IBuildUseCommonFormOptions<T, P>
 ) {
-  const useModalForm = buildUseModalForm<T, P>(options);
+  const useCommonForm = buildUseCommonForm<T, P>(options);
 
-  const WrappedComponent: React.FC<IWithModalFormProps<T, P>> = props => {
+  const WrappedComponent: React.FC<IWithCommonFormProps<T, P>> = props => {
     const {
       value: propsValue,
-      visible: propsVisible,
       onInit: propsInit,
       onOk: propsOnOk,
       onChange: propsChange,
@@ -115,9 +107,9 @@ export function withModalForm<T, P = Record<string, unknown>>(
     } = props;
 
     const [
-      { loading, value, visible },
-      { changeValue, fetchValue, resetValue, changeVisible },
-    ] = useModalForm(props);
+      { loading, value },
+      { changeValue, fetchValue, resetValue },
+    ] = useCommonForm(props);
 
     const onInit = useCallback(async () => {
       await fetchValue?.();
@@ -128,7 +120,6 @@ export function withModalForm<T, P = Record<string, unknown>>(
       (newValue: T, done?: boolean) => {
         if (done) {
           changeValue?.(newValue, true);
-          changeVisible?.(false);
           propsChange?.(newValue);
           propsOnOk?.(newValue, true);
         } else {
@@ -142,7 +133,6 @@ export function withModalForm<T, P = Record<string, unknown>>(
       (done?: boolean) => {
         resetValue?.();
         if (done) {
-          changeVisible?.(false);
           propsOnCancel?.();
         }
       },
@@ -155,17 +145,10 @@ export function withModalForm<T, P = Record<string, unknown>>(
       }
     }, [propsValue]);
 
-    useEffect(() => {
-      if (propsVisible !== undefined) {
-        changeVisible?.(propsVisible);
-      }
-    }, [propsVisible]);
-
     return React.createElement(Component, {
       ...props,
       loading,
       value,
-      visible,
       onInit,
       onOk,
       onCancel,

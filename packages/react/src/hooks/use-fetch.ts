@@ -83,7 +83,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
           }
         });
       }, duration),
-      [ref]
+      []
     );
 
     const onLoad = React.useCallback(
@@ -96,12 +96,12 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
 
         onFetch(_query);
       },
-      [ref, onFetch]
+      []
     );
 
     const onRefresh = React.useCallback(() => {
       onLoad(ref.current.query);
-    }, [ref, onLoad]);
+    }, []);
 
     React.useEffect(() => {
       if (!ref.current.inited) {
@@ -109,7 +109,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       }
       ref.current.query = query;
       onRefresh();
-    }, [ref, query, onRefresh]);
+    }, [query]);
 
     React.useEffect(() => {
       if (!ref.current.inited) {
@@ -120,7 +120,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       if (relation.find(p => (oldProps as any)[p] !== (props as any)[p])) {
         onRefresh();
       }
-    }, [ref, props, onRefresh]);
+    }, [props]);
 
     React.useEffect(() => {
       setInited(true);
@@ -133,7 +133,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       return () => {
         ref.current.isUnmounted = true;
       };
-    }, [ref]);
+    }, []);
 
     return [
       {
