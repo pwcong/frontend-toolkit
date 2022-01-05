@@ -11,7 +11,7 @@ export function buildUseCommonForm<T, P>(
 ) {
   return function useCommonForm(props: P) {
     const {
-      immediate = true,
+      immediate = false,
       defaultValue,
       getValue = (prevValue: T) => Promise.resolve(prevValue),
     } = options;

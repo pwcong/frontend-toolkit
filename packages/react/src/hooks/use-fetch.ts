@@ -86,18 +86,12 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       []
     );
 
-    const onLoad = React.useCallback(
-      (_query, _options?: { force?: boolean }) => {
-        if (ref.current.loading && !_options?.force) {
-          return;
-        }
-        setLoading(true);
-        ref.current.loading = true;
+    const onLoad = React.useCallback(_query => {
+      setLoading(true);
+      ref.current.loading = true;
 
-        onFetch(_query);
-      },
-      []
-    );
+      onFetch(_query);
+    }, []);
 
     const onRefresh = React.useCallback(() => {
       onLoad(ref.current.query);
@@ -127,7 +121,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       ref.current.inited = true;
 
       if (immediate) {
-        onLoad(ref.current.query, { force: true });
+        onLoad(ref.current.query);
       }
 
       return () => {
