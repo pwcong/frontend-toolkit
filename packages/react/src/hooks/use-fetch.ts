@@ -2,11 +2,17 @@ import React from 'react';
 import { debounce } from 'lodash';
 
 export interface IBuildUseFetchOptions<T, P> {
+  /** 是否立即查询，默认值为true */
   immediate?: boolean;
+  /** 防抖间隔（毫秒），默认值为300 */
   duration?: number;
+  /** 关联属性，默认值为空数组 */
   relation?: Array<string>;
+  /** 筛选条件，默认值为空数组 */
   properties?: Array<string | { key: string; value: any }>;
+  /** 筛选条件转换钩子函数 */
   getQuery?: (query: any, props: P) => any;
+  /** 加载数据钩子函数 */
   getData?: (query: any, props: P) => Promise<T>;
 }
 
@@ -43,6 +49,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       ...(defaultQuery || {}),
     });
 
+    // 缓存变量
     const ref = React.useRef({
       props,
       inited,
@@ -52,6 +59,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       isUnmounted: false,
     });
 
+    // 数据请求方法
     const onFetch = React.useCallback(
       debounce(_query => {
         setTimeout(async () => {
@@ -86,6 +94,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       []
     );
 
+    // 数据加载方法
     const onLoad = React.useCallback(_query => {
       setLoading(true);
       ref.current.loading = true;
@@ -93,10 +102,12 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       onFetch(_query);
     }, []);
 
+    // 数据刷新方法
     const onRefresh = React.useCallback(() => {
       onLoad(ref.current.query);
     }, []);
 
+    // 组件更新时监测查询参数变更，若变更自动执行数据加载方法
     React.useEffect(() => {
       if (!ref.current.inited) {
         return;
@@ -105,6 +116,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       onRefresh();
     }, [query]);
 
+    // 组件更新时监测组件Props参数变更（通过关联属性过滤），若变更自动执行数据加载方法
     React.useEffect(() => {
       if (!ref.current.inited) {
         return;
@@ -116,6 +128,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       }
     }, [props]);
 
+    // 组件初始化时判断是否自动执行数据加载方法
     React.useEffect(() => {
       setInited(true);
       ref.current.inited = true;
@@ -129,21 +142,27 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
       };
     }, []);
 
-    return [
-      {
-        inited,
-        loading,
-        query,
-        data,
-      },
-      {
-        setInited,
-        setLoading,
-        setQuery,
-        setData,
-        onLoad,
-        onRefresh,
-      },
+    const fetchResult = {
+      inited,
+      loading,
+      query,
+      data,
+    };
+
+    const fetchAction = {
+      setInited,
+      setLoading,
+      setQuery,
+      setData,
+      onLoad,
+      onRefresh,
+    };
+
+    const ret: [typeof fetchResult, typeof fetchAction] = [
+      fetchResult,
+      fetchAction,
     ];
+
+    return ret;
   };
 }

@@ -1,30 +1,42 @@
 import React from 'react';
 import { debounce, omit } from 'lodash';
 
+/** 平台标识 */
 export enum EListPlatform {
+  /** 桌面端 */
   'Desktop' = 'Desktop',
+  /** 移动端 */
   'Mobile' = 'Mobile',
 }
 
 export interface IUseListData<T> {
-  totalSize: number;
+  /** 数据 */
   data: Array<T>;
+  /** 数据总量 */
+  totalSize: number;
 }
 
 export type IUseListQuery = {
-  // 分页页码
+  /** 分页页码 */
   pageNo: number;
-  // 分页大小
+  /** 分页大小 */
   pageSize: number;
 };
 
 export interface IBuildUseListOptions<T, P> {
+  /** 平台标识，默认值为Desktop */
   platform?: EListPlatform;
+  /** 是否立即查询，默认值为true */
   immediate?: boolean;
+  /** 防抖间隔（毫秒），默认值为300 */
   duration?: number;
+  /** 关联属性，默认值为空数组 */
   relation?: Array<string>;
+  /** 筛选条件，默认值为空数组 */
   properties?: Array<string | { key: string; value: any }>;
+  /** 筛选条件转换钩子函数 */
   getQuery?: (query: any, props: P) => any;
+  /** 加载数据钩子函数 */
   getData?: (query: any, props: P) => Promise<IUseListData<T>>;
 }
 
@@ -75,12 +87,13 @@ export function buildUseList<T, P = Record<string, unknown>>(
     });
 
     const [totalSize, setTotalSize] = React.useState(0);
-    // 判断是否有下一页
+    // 是否允许加载更多
     const hasMore = React.useMemo(
       () => pageSize * pageNo < totalSize && list.length < totalSize,
       [pageSize, pageNo, list, totalSize]
     );
 
+    // 缓存变量
     const ref = React.useRef({
       props,
       pageNo,
@@ -94,6 +107,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       isUnmounted: false,
     });
 
+    // 加载中状态变更方法
     const changeLoading = React.useCallback(
       (active?: boolean, more?: boolean) => {
         if (active) {
@@ -113,6 +127,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       []
     );
 
+    // 数据请求方法
     const onFetch = React.useCallback(
       debounce(_query => {
         setTimeout(async () => {
@@ -160,6 +175,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       []
     );
 
+    // 数据加载方法
     const onLoad = React.useCallback(
       (_query, _options?: { more?: boolean }) => {
         changeLoading(true, _options?.more);
@@ -168,6 +184,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       []
     );
 
+    // 数据刷新方法
     const onRefresh = React.useCallback((reload?: boolean) => {
       const _reload = reload === undefined ? true : reload;
       if (_reload) {
@@ -178,6 +195,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       onLoad(ref.current.query);
     }, []);
 
+    // 数据加载更多方法
     const onLoadMore = React.useCallback(
       debounce(() => {
         changeLoading(true, true);
@@ -188,6 +206,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       []
     );
 
+    // 组件更新时监测页码变更，若变更自动执行数据加载方法
     React.useEffect(() => {
       if (!ref.current.inited) {
         return;
@@ -196,6 +215,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       onLoad(ref.current.query);
     }, [pageNo]);
 
+    // 组件更新时监测页数和查询参数变更，若变更自动执行数据加载方法
     React.useEffect(() => {
       if (!ref.current.inited) {
         return;
@@ -205,6 +225,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       onRefresh(true);
     }, [pageSize, query]);
 
+    // 组件更新时监测组件Props参数变更（通过关联属性过滤），若变更自动执行数据加载方法
     React.useEffect(() => {
       if (!ref.current.inited) {
         return;
@@ -216,6 +237,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       }
     }, [props]);
 
+    // 组件初始化时判断是否自动执行数据加载方法
     React.useEffect(() => {
       setInited(true);
       ref.current.inited = true;
@@ -229,31 +251,36 @@ export function buildUseList<T, P = Record<string, unknown>>(
       };
     }, []);
 
-    return [
-      {
-        inited,
-        loading,
-        loadingMore,
-        pageNo,
-        pageSize,
-        totalSize,
-        hasMore,
-        query,
-        list,
-      },
-      {
-        setInited,
-        setLoading,
-        setLoadingMore,
-        setPageNo,
-        setPageSize,
-        setTotalSize,
-        setQuery,
-        setList,
-        onLoad,
-        onRefresh,
-        onLoadMore,
-      },
+    const listResult = {
+      inited,
+      loading,
+      loadingMore,
+      pageNo,
+      pageSize,
+      totalSize,
+      hasMore,
+      query,
+      list,
+    };
+    const listAction = {
+      setInited,
+      setLoading,
+      setLoadingMore,
+      setPageNo,
+      setPageSize,
+      setTotalSize,
+      setQuery,
+      setList,
+      onLoad,
+      onRefresh,
+      onLoadMore,
+    };
+
+    const ret: [typeof listResult, typeof listAction] = [
+      listResult,
+      listAction,
     ];
+
+    return ret;
   };
 }
