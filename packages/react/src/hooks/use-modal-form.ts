@@ -7,6 +7,11 @@ interface IBuildUseModalFormOptions<T, P> {
   getValue?: (prevValue: T, props: P) => Promise<T>;
 }
 
+/**
+ * 弹窗表单Hook工厂函数
+ * @param options  弹窗表单Hook配置
+ * @returns
+ */
 export function buildUseModalForm<T, P>(
   options: IBuildUseModalFormOptions<T, P>
 ) {
@@ -99,21 +104,27 @@ export function buildUseModalForm<T, P>(
 }
 
 export type IModalFormProps<T> = {
+  /** 表单值 */
   value: T;
+  /** 弹窗可见性 */
   visible: boolean;
+  /** 是否加载中 */
   loading: boolean;
+  /** 初始钩子函数 */
   onInit: () => void;
+  /** 提交钩子函数 */
   onOk: (value: T, done?: boolean) => void;
+  /** 取消钩子函数 */
   onCancel: (done?: boolean) => void;
 };
 
-type IWithModalFormProps<T, P = Record<string, unknown>> = P &
+type IWithModalFormProps<T, P = {}> = P &
   Partial<IModalFormProps<T>> &
   Partial<{
     onChange: (value: T) => void;
   }>;
 
-export function withModalForm<T, P = Record<string, unknown>>(
+export function withModalForm<T, P = {}>(
   Component: any,
   options: IBuildUseModalFormOptions<T, P>
 ) {

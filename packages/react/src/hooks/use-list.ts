@@ -40,9 +40,12 @@ export interface IBuildUseListOptions<T, P> {
   getData?: (query: any, props: P) => Promise<IUseListData<T>>;
 }
 
-export function buildUseList<T, P = Record<string, unknown>>(
-  options: IBuildUseListOptions<T, P>
-) {
+/**
+ * 列表请求Hook工厂函数
+ * @param options 列表请求Hook配置
+ * @returns
+ */
+export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
   const {
     // platform = EListPlatform.Desktop,
     immediate = true,
@@ -53,7 +56,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
     getData = () => Promise.resolve({ data: [], totalSize: 0 }),
   } = options;
 
-  return function useList<C = Record<string, unknown>>(
+  return function useList<C = {}>(
     props: P,
     _defaultQuery?: C & Partial<IUseListQuery>
   ) {
@@ -132,6 +135,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
       debounce(_query => {
         setTimeout(async () => {
           try {
+            // 通过筛选条件转换钩子函数获取转换后的请求条件
             const newQuery = getQuery(
               {
                 pageNo: ref.current.pageNo,
@@ -141,6 +145,7 @@ export function buildUseList<T, P = Record<string, unknown>>(
               ref.current.props
             );
 
+            // 过滤值为undefined或null的请求条件
             const targetQuery = Object.keys(newQuery).reduce((p, c) => {
               const v = newQuery[c];
               if (v !== undefined && v !== null) {

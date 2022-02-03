@@ -9,6 +9,11 @@ interface IBuildUseCommonFormOptions<T, P> {
   getValue?: (prevValue: T, props: P) => Promise<T>;
 }
 
+/**
+ * 通用表单Hook工厂函数
+ * @param options 通用表单Hook配置
+ * @returns
+ */
 export function buildUseCommonForm<T, P>(
   options: IBuildUseCommonFormOptions<T, P>
 ) {
@@ -92,20 +97,31 @@ export function buildUseCommonForm<T, P>(
 }
 
 export type ICommonFormProps<T> = {
+  /** 表单值 */
   value: T;
+  /** 是否加载中 */
   loading: boolean;
+  /** 初始钩子函数 */
   onInit: () => void;
+  /** 提交钩子函数 */
   onOk: (value: T, done?: boolean) => void;
+  /** 取消钩子函数 */
   onCancel: (done?: boolean) => void;
 };
 
-type IWithCommonFormProps<T, P = Record<string, unknown>> = P &
+type IWithCommonFormProps<T, P = {}> = P &
   Partial<ICommonFormProps<T>> &
   Partial<{
     onChange: (value: T) => void;
   }>;
 
-export function withCommonForm<T, P = Record<string, unknown>>(
+/**
+ * 通用表单Hoc
+ * @param Component 组件
+ * @param options 通用表单Hook配置
+ * @returns
+ */
+export function withCommonForm<T, P = {}>(
   Component: any,
   options: IBuildUseCommonFormOptions<T, P>
 ) {

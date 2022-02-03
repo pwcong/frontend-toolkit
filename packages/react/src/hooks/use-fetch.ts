@@ -16,9 +16,12 @@ export interface IBuildUseFetchOptions<T, P> {
   getData?: (query: any, props: P) => Promise<T>;
 }
 
-export function buildUseFetch<T, P = Record<string, unknown>>(
-  options: IBuildUseFetchOptions<T, P>
-) {
+/**
+ * 数据请求Hook工厂函数
+ * @param options 数据请求Hook配置
+ * @returns
+ */
+export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
   const {
     immediate = true,
     duration = 200,
@@ -28,10 +31,7 @@ export function buildUseFetch<T, P = Record<string, unknown>>(
     getData = () => Promise.resolve(undefined),
   } = options;
 
-  return function useFetch<C = Record<string, unknown>>(
-    props: P,
-    defaultQuery?: C
-  ) {
+  return function useFetch<C = {}>(props: P, defaultQuery?: C) {
     const [inited, setInited] = React.useState(false);
     const [loading, setLoading] = React.useState(immediate);
 
