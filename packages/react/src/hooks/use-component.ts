@@ -1,15 +1,17 @@
+import React, { ForwardedRef, forwardRef } from 'react';
+
 import { getDisplayName } from '../utils/component';
-import React from 'react';
 
 /**
  * 组件默认属性Hoc
  * @param defaultProps 默认属性
  * @returns
  */
-export function withDefaultProps<P = {}>(defaultProps?: Partial<P>) {
+export function withDefaultProps<P = {}, R = any>(defaultProps?: Partial<P>) {
   return function(Component: any) {
-    const WrappedComponent: React.FC<P> = props => {
+    const WrappedComponent = (props: P, ref: ForwardedRef<R>) => {
       return React.createElement(Component, {
+        ref,
         ...defaultProps,
         ...props,
       });
@@ -19,6 +21,6 @@ export function withDefaultProps<P = {}>(defaultProps?: Partial<P>) {
       Component
     )})`;
 
-    return WrappedComponent;
+    return forwardRef<R, P>(WrappedComponent);
   };
 }

@@ -9,12 +9,12 @@ export enum EListPlatform {
   'Mobile' = 'Mobile',
 }
 
-export interface IUseListData<T> {
+export type IUseListData<T> = Record<string, unknown> & {
   /** 数据 */
   data: Array<T>;
   /** 数据总量 */
   totalSize: number;
-}
+};
 
 export type IUseListQuery = {
   /** 分页页码 */
@@ -64,8 +64,6 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     const [loading, setLoading] = React.useState(immediate);
     const [loadingMore, setLoadingMore] = React.useState(false);
 
-    const [list, setList] = React.useState<Array<T>>([]);
-
     const defaultQuery = React.useMemo(
       () => ({
         pageNo: 1,
@@ -76,6 +74,13 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     );
     const [pageNo, setPageNo] = React.useState(defaultQuery.pageNo);
     const [pageSize, setPageSize] = React.useState(defaultQuery.pageSize);
+    const [totalSize, setTotalSize] = React.useState(0);
+
+    const [list, setList] = React.useState<Array<T>>([]);
+    const [data, setData] = React.useState<IUseListData<T>>({
+      data: list,
+      totalSize: totalSize,
+    });
 
     const [query, setQuery] = React.useState({
       ...properties.reduce((p, c) => {
@@ -89,7 +94,6 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       ...omit(defaultQuery, ['pageNo', 'pageSize']),
     });
 
-    const [totalSize, setTotalSize] = React.useState(0);
     // 是否允许加载更多
     const hasMore = React.useMemo(
       () => pageSize * pageNo < totalSize && list.length < totalSize,
@@ -106,6 +110,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       loading,
       loadingMore,
       query,
+      data,
       list,
       isUnmounted: false,
     });
@@ -154,12 +159,14 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
               return p;
             }, {} as any);
 
-            const { data = [], totalSize: _totalSize = 0 } = await getData(
-              targetQuery,
-              ref.current.props
-            );
+            const result = await getData(targetQuery, ref.current.props);
 
-            setTotalSize(_totalSize);
+            !ref.current.isUnmounted && setData(result);
+            ref.current.data = result;
+
+            const { data = [], totalSize: _totalSize = 0 } = result;
+
+            !ref.current.isUnmounted && setTotalSize(_totalSize);
             ref.current.totalSize = _totalSize;
 
             let _list: Array<T> = [];
@@ -168,12 +175,12 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             } else {
               _list = data;
             }
-            setList(_list);
+            !ref.current.isUnmounted && setList(_list);
             ref.current.list = _list;
           } catch (e) {
             console.error(e);
           } finally {
-            changeLoading(false);
+            !ref.current.isUnmounted && changeLoading(false);
           }
         });
       }, duration),
@@ -266,6 +273,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       hasMore,
       query,
       list,
+      data,
     };
     const listAction = {
       setInited,
@@ -276,6 +284,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       setTotalSize,
       setQuery,
       setList,
+      setData,
       onLoad,
       onRefresh,
       onLoadMore,

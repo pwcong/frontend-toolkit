@@ -81,12 +81,12 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
             const _data = await getData(targetQuery, ref.current.props);
 
-            setData(_data);
+            !ref.current.isUnmounted && setData(_data);
             ref.current.data = _data;
           } catch (e) {
             console.error(e);
           } finally {
-            setLoading(false);
+            !ref.current.isUnmounted && setLoading(false);
             ref.current.loading = false;
           }
         });
