@@ -38,6 +38,8 @@ export interface IBuildUseListOptions<T, P> {
   getQuery?: (query: any, props: P) => any;
   /** 加载数据钩子函数 */
   getData?: (query: any, props: P) => Promise<IUseListData<T>>;
+  /** 自定义错误逻辑 */
+  onError?: (err: any) => void;
 }
 
 /**
@@ -54,6 +56,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     properties = [],
     getQuery = query => query,
     getData = () => Promise.resolve({ data: [], totalSize: 0 }),
+    onError = err => console.error(err),
   } = options;
 
   return function useList<C = {}>(
@@ -177,8 +180,8 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             }
             !ref.current.isUnmounted && setList(_list);
             ref.current.list = _list;
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            onError(err);
           } finally {
             !ref.current.isUnmounted && changeLoading(false);
           }

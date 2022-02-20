@@ -14,6 +14,8 @@ export interface IBuildUseFetchOptions<T, P> {
   getQuery?: (query: any, props: P) => any;
   /** 加载数据钩子函数 */
   getData?: (query: any, props: P) => Promise<T>;
+  /** 自定义错误逻辑 */
+  onError?: (err: any) => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     properties = [],
     getQuery = query => query,
     getData = () => Promise.resolve(undefined),
+    onError = err => console.error(err),
   } = options;
 
   return function useFetch<C = {}>(props: P, defaultQuery?: C) {
@@ -83,8 +86,8 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
             !ref.current.isUnmounted && setData(_data);
             ref.current.data = _data;
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            onError(err);
           } finally {
             !ref.current.isUnmounted && setLoading(false);
             ref.current.loading = false;
