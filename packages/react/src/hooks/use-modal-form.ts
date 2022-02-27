@@ -15,7 +15,12 @@ interface IBuildUseModalFormOptions<T, P> {
 export function buildUseModalForm<T, P>(
   options: IBuildUseModalFormOptions<T, P>
 ) {
-  return function useModalForm(props: P) {
+  /**
+   * 弹窗表单Hook
+   * @param props 组件Props
+   * @returns
+   */
+  function useModalForm(props: P) {
     const {
       defaultValue,
       getValue = (prevValue: T) => Promise.resolve(prevValue),
@@ -100,7 +105,9 @@ export function buildUseModalForm<T, P>(
     ];
 
     return ret;
-  };
+  }
+
+  return useModalForm;
 }
 
 export type IModalFormProps<T> = {

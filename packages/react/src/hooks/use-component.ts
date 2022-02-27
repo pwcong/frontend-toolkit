@@ -1,6 +1,6 @@
 import React, { ForwardedRef, forwardRef } from 'react';
 
-import { getDisplayName } from '../utils/component';
+import { getDisplayName } from '../utils';
 
 /**
  * 组件默认属性Hoc

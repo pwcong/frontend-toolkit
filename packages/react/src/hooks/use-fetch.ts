@@ -14,8 +14,6 @@ export interface IBuildUseFetchOptions<T, P> {
   getQuery?: (query: any, props: P) => any;
   /** 加载数据钩子函数 */
   getData?: (query: any, props: P) => Promise<T>;
-  /** 自定义错误逻辑 */
-  onError?: (err: any) => void;
 }
 
 /**
@@ -31,10 +29,15 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     properties = [],
     getQuery = query => query,
     getData = () => Promise.resolve(undefined),
-    onError = err => console.error(err),
   } = options;
 
-  return function useFetch<C = {}>(props: P, defaultQuery?: C) {
+  /**
+   * 数据请求Hook
+   * @param props 组件Props
+   * @param defaultQuery 默认查询条件
+   * @returns
+   */
+  function useFetch<C = {}>(props: P, defaultQuery?: C) {
     const [inited, setInited] = React.useState(false);
     const [loading, setLoading] = React.useState(immediate);
 
@@ -86,8 +89,8 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
             !ref.current.isUnmounted && setData(_data);
             ref.current.data = _data;
-          } catch (err) {
-            onError(err);
+          } catch (e) {
+            console.error(e);
           } finally {
             !ref.current.isUnmounted && setLoading(false);
             ref.current.loading = false;
@@ -167,5 +170,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     ];
 
     return ret;
-  };
+  }
+
+  return useFetch;
 }

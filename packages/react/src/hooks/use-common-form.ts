@@ -17,7 +17,12 @@ interface IBuildUseCommonFormOptions<T, P> {
 export function buildUseCommonForm<T, P>(
   options: IBuildUseCommonFormOptions<T, P>
 ) {
-  return function useCommonForm(props: P) {
+  /**
+   * 通用表单Hook
+   * @param props 组件Props
+   * @returns
+   */
+  function useCommonForm(props: P) {
     const {
       immediate = false,
       defaultValue,
@@ -93,7 +98,9 @@ export function buildUseCommonForm<T, P>(
     ];
 
     return ret;
-  };
+  }
+
+  return useCommonForm;
 }
 
 export type ICommonFormProps<T> = {

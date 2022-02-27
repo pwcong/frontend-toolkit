@@ -1,3 +1,8 @@
+/**
+ * 获取组件名称
+ * @param Component 组件定义
+ * @returns 
+ */
 export function getDisplayName(Component: any) {
   return (
     Component.displayName ||
