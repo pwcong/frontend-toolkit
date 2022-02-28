@@ -8,9 +8,9 @@ type IOptions = {
   /** 转换方法 */
   transform?: {
     /** 编码方法 */
-    encode: (value: string) => string;
+    encode: (query: any) => string;
     /** 解码方法 */
-    decode: (value: string) => string;
+    decode: (str: string) => any;
   };
 };
 
@@ -23,8 +23,8 @@ export function buildUseQuery(options?: IOptions) {
   const {
     name = 'query',
     transform = {
-      encode: encodeURIComponent,
-      decode: decodeURIComponent,
+      encode: (query: any) => encodeURIComponent(JSON.stringify(query)),
+      decode: (str: string) => JSON.parse(decodeURIComponent(str)),
     },
   } = options ?? {};
 
@@ -42,7 +42,7 @@ export function buildUseQuery(options?: IOptions) {
       const value = search.get(name);
       if (value) {
         try {
-          existQuery = JSON.parse(transform.decode(value));
+          existQuery = transform.decode(value);
         } catch {
           // DO NOTHING
         }
@@ -94,7 +94,7 @@ export function buildUseQuery(options?: IOptions) {
       if (Object.keys(newQuery).length <= 0) {
         search.delete(name);
       } else {
-        search.set(name, transform.encode(JSON.stringify(newQuery)));
+        search.set(name, transform.encode(newQuery));
       }
 
       history.replaceState(null, '', `?${search.toString()}`);
