@@ -83,6 +83,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
           } catch (e) {
             console.error(e);
           } finally {
+            queue.current.size--;
             ref.current.loading = false;
             !ref.current.isUnmounted &&
               queue.current.size <= 0 &&
