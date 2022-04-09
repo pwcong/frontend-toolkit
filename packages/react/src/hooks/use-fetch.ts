@@ -65,47 +65,60 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       isUnmounted: false,
     });
 
+    // 请求队列
+    const queue = React.useRef({
+      size: 0,
+      next: Promise.resolve(),
+    });
+
     // 数据请求方法
     const onFetch = React.useCallback(
       debounce(_query => {
-        setTimeout(async () => {
+        const run = async () => {
           try {
-            const newQuery = getQuery(
-              {
-                ..._query,
-              },
-              ref.current.props
-            );
+            const _data = await getData(_query, ref.current.props);
 
-            const targetQuery = Object.keys(newQuery).reduce((p, c) => {
-              const v = newQuery[c];
-              if (v !== undefined && v !== null) {
-                p[c] = v;
-              }
-              return p;
-            }, {} as any);
-
-            const _data = await getData(targetQuery, ref.current.props);
-
-            !ref.current.isUnmounted && setData(_data);
             ref.current.data = _data;
+            !ref.current.isUnmounted && setData(_data);
           } catch (e) {
             console.error(e);
           } finally {
-            !ref.current.isUnmounted && setLoading(false);
             ref.current.loading = false;
+            !ref.current.isUnmounted &&
+              queue.current.size <= 0 &&
+              setLoading(false);
           }
-        });
+        };
+
+        queue.current.size++;
+        queue.current.next = queue.current.next.then(run);
       }, duration),
       []
     );
 
     // 数据加载方法
     const onLoad = React.useCallback(_query => {
-      setLoading(true);
       ref.current.loading = true;
+      setLoading(true);
 
-      onFetch(_query);
+      // 通过筛选条件转换钩子函数获取转换后的请求条件
+      const newQuery = getQuery(
+        {
+          ..._query,
+        },
+        ref.current.props
+      );
+
+      // 过滤值为undefined或null的请求条件
+      const targetQuery = Object.keys(newQuery).reduce((p, c) => {
+        const v = newQuery[c];
+        if (v !== undefined && v !== null) {
+          p[c] = v;
+        }
+        return p;
+      }, {} as any);
+
+      onFetch(targetQuery);
     }, []);
 
     // 数据刷新方法

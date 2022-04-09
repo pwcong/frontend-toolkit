@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { shallowEqual } from '../utils';
 
-type IOptions = {
+export type IBuildUseQueryOptions = {
   /** 查询名称 */
   name?: string;
   /** 转换方法 */
@@ -19,7 +19,7 @@ type IOptions = {
  * @param options 查询条件Hook配置
  * @returns
  */
-export function buildUseQuery(options?: IOptions) {
+export function buildUseQuery(options?: IBuildUseQueryOptions) {
   const {
     name = 'query',
     transform = {
@@ -100,7 +100,9 @@ export function buildUseQuery(options?: IOptions) {
       history.replaceState(null, '', `?${search.toString()}`);
     });
 
-    return [query, setQuery];
+    const ret = [query, setQuery] as const;
+
+    return ret;
   }
 
   return useQuery;

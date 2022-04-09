@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-interface IBuildUseCommonFormOptions<T, P> {
+export interface IBuildUseCommonFormOptions<T, P> {
   /** 是否立即加载数据 */
   immediate?: boolean;
   /** 默认值 */
@@ -116,7 +116,7 @@ export type ICommonFormProps<T> = {
   onCancel: (done?: boolean) => void;
 };
 
-type IWithCommonFormProps<T, P = {}> = P &
+export type IWithCommonFormProps<T, P = {}> = P &
   Partial<ICommonFormProps<T>> &
   Partial<{
     onChange: (value: T) => void;

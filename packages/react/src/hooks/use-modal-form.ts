@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-interface IBuildUseModalFormOptions<T, P> {
+export interface IBuildUseModalFormOptions<T, P> {
   /** 默认值 */
   defaultValue: T;
   /** 加载数据钩子函数 */
@@ -125,7 +125,7 @@ export type IModalFormProps<T> = {
   onCancel: (done?: boolean) => void;
 };
 
-type IWithModalFormProps<T, P = {}> = P &
+export type IWithModalFormProps<T, P = {}> = P &
   Partial<IModalFormProps<T>> &
   Partial<{
     onChange: (value: T) => void;

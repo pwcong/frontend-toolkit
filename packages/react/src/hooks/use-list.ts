@@ -121,21 +121,27 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       isUnmounted: false,
     });
 
+    // 请求队列
+    const queue = React.useRef({
+      size: 0,
+      next: Promise.resolve(),
+    });
+
     // 加载中状态变更方法
     const changeLoading = React.useCallback(
       (active?: boolean, more?: boolean) => {
         if (active) {
-          setLoading(true);
           ref.current.loading = true;
+          setLoading(true);
           if (more) {
             setLoadingMore(true);
             ref.current.loadingMore = true;
           }
         } else {
-          setLoading(false);
           ref.current.loading = false;
-          setLoadingMore(false);
+          setLoading(false);
           ref.current.loadingMore = false;
+          setLoadingMore(false);
         }
       },
       []
@@ -144,36 +150,17 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     // 数据请求方法
     const onFetch = React.useCallback(
       debounce(_query => {
-        setTimeout(async () => {
+        const run = async () => {
           try {
-            // 通过筛选条件转换钩子函数获取转换后的请求条件
-            const newQuery = getQuery(
-              {
-                pageNo: ref.current.pageNo,
-                pageSize: ref.current.pageSize,
-                ..._query,
-              },
-              ref.current.props
-            );
+            const result = await getData(_query, ref.current.props);
 
-            // 过滤值为undefined或null的请求条件
-            const targetQuery = Object.keys(newQuery).reduce((p, c) => {
-              const v = newQuery[c];
-              if (v !== undefined && v !== null) {
-                p[c] = v;
-              }
-              return p;
-            }, {} as any);
-
-            const result = await getData(targetQuery, ref.current.props);
-
-            !ref.current.isUnmounted && setData(result);
             ref.current.data = result;
+            !ref.current.isUnmounted && setData(result);
 
             const { data = [], totalSize: _totalSize = 0 } = result;
 
-            !ref.current.isUnmounted && setTotalSize(_totalSize);
             ref.current.totalSize = _totalSize;
+            !ref.current.isUnmounted && setTotalSize(_totalSize);
 
             let _list: Array<T> = [];
             if (ref.current.loadingMore) {
@@ -181,14 +168,20 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             } else {
               _list = data;
             }
-            !ref.current.isUnmounted && setList(_list);
             ref.current.list = _list;
+            !ref.current.isUnmounted && setList(_list);
           } catch (e) {
             console.error(e);
           } finally {
-            !ref.current.isUnmounted && changeLoading(false);
+            queue.current.size--;
+            !ref.current.isUnmounted &&
+              queue.current.size <= 0 &&
+              changeLoading(false);
           }
-        });
+        };
+
+        queue.current.size++;
+        queue.current.next = queue.current.next.then(run);
       }, duration),
       []
     );
@@ -197,7 +190,27 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     const onLoad = React.useCallback(
       (_query, _options?: { more?: boolean }) => {
         changeLoading(true, _options?.more);
-        onFetch(_query);
+
+        // 通过筛选条件转换钩子函数获取转换后的请求条件
+        const newQuery = getQuery(
+          {
+            pageNo: ref.current.pageNo,
+            pageSize: ref.current.pageSize,
+            ..._query,
+          },
+          ref.current.props
+        );
+
+        // 过滤值为undefined或null的请求条件
+        const targetQuery = Object.keys(newQuery).reduce((p, c) => {
+          const v = newQuery[c];
+          if (v !== undefined && v !== null) {
+            p[c] = v;
+          }
+          return p;
+        }, {} as any);
+
+        onFetch(targetQuery);
       },
       []
     );
@@ -206,8 +219,8 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     const onRefresh = React.useCallback((reload?: boolean) => {
       const _reload = reload === undefined ? true : reload;
       if (_reload) {
-        setPageNo(1);
         ref.current.pageNo = 1;
+        setPageNo(1);
       }
 
       onLoad(ref.current.query);
@@ -218,8 +231,8 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       debounce(() => {
         changeLoading(true, true);
 
-        setPageNo(ref.current.pageNo + 1);
         ref.current.pageNo++;
+        setPageNo(ref.current.pageNo + 1);
       }, duration),
       []
     );
