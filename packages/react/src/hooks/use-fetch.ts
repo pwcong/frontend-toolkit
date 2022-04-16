@@ -148,6 +148,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     useEffect(() => {
       setInited(true);
       ref.current.inited = true;
+      ref.current.isUnmounted = false;
 
       if (immediate) {
         onLoad(ref.current.query);

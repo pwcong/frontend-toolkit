@@ -272,6 +272,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     useEffect(() => {
       setInited(true);
       ref.current.inited = true;
+      ref.current.isUnmounted = false;
 
       if (immediate) {
         onLoad(ref.current.query);
