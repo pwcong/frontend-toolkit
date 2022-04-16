@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { debounce } from 'lodash';
 
 export interface IBuildUseFetchOptions<T, P> {
@@ -38,12 +38,12 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
    * @returns
    */
   function useFetch<C = {}>(props: P, defaultQuery?: C) {
-    const [inited, setInited] = React.useState(false);
-    const [loading, setLoading] = React.useState(immediate);
+    const [inited, setInited] = useState(false);
+    const [loading, setLoading] = useState(immediate);
 
-    const [data, setData] = React.useState<T>();
+    const [data, setData] = useState<T>();
 
-    const [query, setQuery] = React.useState({
+    const [query, setQuery] = useState({
       ...properties.reduce((p, c) => {
         if (typeof c === 'object') {
           p[c.key] = c.value;
@@ -54,25 +54,27 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       }, {} as any),
       ...(defaultQuery || {}),
     });
+    const [targetQuery, setTargetQuery] = useState(query);
 
     // 缓存变量
-    const ref = React.useRef({
+    const ref = useRef({
       props,
       inited,
       loading,
       query,
+      targetQuery,
       data,
       isUnmounted: false,
     });
 
     // 请求队列
-    const queue = React.useRef({
+    const queue = useRef({
       size: 0,
       next: Promise.resolve(),
     });
 
     // 数据请求方法
-    const onFetch = React.useCallback(
+    const onFetch = useCallback(
       debounce(_query => {
         const run = async () => {
           try {
@@ -98,7 +100,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     );
 
     // 数据加载方法
-    const onLoad = React.useCallback(_query => {
+    const onLoad = useCallback(_query => {
       ref.current.loading = true;
       setLoading(true);
 
@@ -110,25 +112,19 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
         ref.current.props
       );
 
-      // 过滤值为undefined或null的请求条件
-      const targetQuery = Object.keys(newQuery).reduce((p, c) => {
-        const v = newQuery[c];
-        if (v !== undefined && v !== null) {
-          p[c] = v;
-        }
-        return p;
-      }, {} as any);
+      ref.current.targetQuery = newQuery;
+      setTargetQuery(newQuery);
 
-      onFetch(targetQuery);
+      onFetch(newQuery);
     }, []);
 
     // 数据刷新方法
-    const onRefresh = React.useCallback(() => {
+    const onRefresh = useCallback(() => {
       onLoad(ref.current.query);
     }, []);
 
     // 组件更新时监测查询参数变更，若变更自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       if (!ref.current.inited) {
         return;
       }
@@ -137,7 +133,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     }, [query]);
 
     // 组件更新时监测组件Props参数变更（通过关联属性过滤），若变更自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       if (!ref.current.inited) {
         return;
       }
@@ -149,7 +145,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     }, [props]);
 
     // 组件初始化时判断是否自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       setInited(true);
       ref.current.inited = true;
 
@@ -166,6 +162,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       inited,
       loading,
       query,
+      targetQuery,
       data,
     };
 
@@ -173,15 +170,13 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       setInited,
       setLoading,
       setQuery,
+      setTargetQuery,
       setData,
       onLoad,
       onRefresh,
     };
 
-    const ret: [typeof fetchResult, typeof fetchAction] = [
-      fetchResult,
-      fetchAction,
-    ];
+    const ret = [fetchResult, fetchAction] as const;
 
     return ret;
   }

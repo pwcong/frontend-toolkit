@@ -1,4 +1,4 @@
-import React, { ForwardedRef, forwardRef, useCallback } from 'react';
+import { createElement, ForwardedRef, forwardRef, useCallback } from 'react';
 
 import { getDisplayName } from '../utils';
 
@@ -10,7 +10,7 @@ import { getDisplayName } from '../utils';
 export function withDefaultProps<P = {}, R = any>(defaultProps?: Partial<P>) {
   return function(Component: any) {
     const WrappedComponent = (props: P, ref: ForwardedRef<R>) => {
-      return React.createElement(Component, {
+      return createElement(Component, {
         ref,
         ...defaultProps,
         ...props,
@@ -60,7 +60,7 @@ export function withChangeProp<T = any, P = {}, R = any>(options?: {
         [onChange]
       );
 
-      return React.createElement(Component, {
+      return createElement(Component, {
         ...restProps,
         ref,
         value: input(value),

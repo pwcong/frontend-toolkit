@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { createElement, useRef, useState, useEffect, useCallback } from 'react';
 
 export interface IBuildUseModalFormOptions<T, P> {
   /** 默认值 */
@@ -27,7 +27,7 @@ export function buildUseModalForm<T, P>(
     } = options;
 
     const [visible, setVisible] = useState(false);
-    const changeVisible = React.useCallback((nextVisible: boolean) => {
+    const changeVisible = useCallback((nextVisible: boolean) => {
       setVisible(nextVisible);
     }, []);
     const [value, setValue] = useState(defaultValue);
@@ -43,7 +43,7 @@ export function buildUseModalForm<T, P>(
     const [loading, setLoading] = useState(false);
 
     // 值变更方法
-    const changeValue = React.useCallback((nextValue: T, done?: boolean) => {
+    const changeValue = useCallback((nextValue: T, done?: boolean) => {
       setValue(nextValue);
       if (done) {
         cacheValue.current.prev = nextValue;
@@ -51,7 +51,7 @@ export function buildUseModalForm<T, P>(
     }, []);
 
     // 值刷新方法
-    const fetchValue = React.useCallback(async () => {
+    const fetchValue = useCallback(async () => {
       setLoading(true);
       try {
         const nextValue = await getValue(
@@ -68,7 +68,7 @@ export function buildUseModalForm<T, P>(
     }, []);
 
     // 值重置方法
-    const resetValue = React.useCallback(() => {
+    const resetValue = useCallback(() => {
       changeValue(cacheValue.current.prev);
     }, []);
 
@@ -194,7 +194,7 @@ export function withModalForm<T, P = {}>(
       }
     }, [propsVisible]);
 
-    return React.createElement(Component, {
+    return createElement(Component, {
       ...props,
       loading,
       value,

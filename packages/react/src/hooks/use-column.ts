@@ -1,4 +1,7 @@
-import React, {
+import {
+  createElement,
+  cloneElement,
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -28,6 +31,8 @@ export type IColumnChangerProps = {
   value?: IColumnKeys;
   /** 列变更事件 */
   onChange?: (value: IColumnKeys) => void;
+  /** 列重置事件 */
+  onReset?: () => void;
 };
 
 export type IBuildUseColumnsOptions<C extends Record<any, any> = {}> = {
@@ -144,7 +149,7 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
 
       if (!!cache) {
         setCacheColumnKeys(
-          getStorageKey(`${configs[index].key}_val`, cache),
+          getStorageKey(`${configs[index].key}_cur`, cache),
           value
         );
       }
@@ -165,14 +170,19 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
         const _columns = columns.map(column => ({
           key: column[keyProperty],
           title: column[titleProperty],
-          dynamic: !!column[dynamicProperty],
+          dynamic: column[dynamicProperty],
         }));
-        return React.cloneElement(
+        return cloneElement(
           renderChanger(
             {
               columns: _columns,
               value: keyss[index],
               onChange: value => handleSetKeys(value, index),
+              onReset: () =>
+                handleSetKeys(
+                  columns.map(c => c[keyProperty]),
+                  index
+                ),
             },
             config
           ),
@@ -182,9 +192,7 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
         );
       });
 
-      return renderTrigger(
-        React.createElement(React.Fragment, undefined, changers)
-      );
+      return renderTrigger(createElement(Fragment, undefined, changers));
     }, [keyss]);
 
     useEffect(() => {
@@ -203,7 +211,7 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
         );
 
         if (isSameKey(allKeys, _allKeys)) {
-          keys = getCacheColumnKeys(getStorageKey(`${key}_val`, cache), keys);
+          keys = getCacheColumnKeys(getStorageKey(`${key}_cur`, cache), keys);
         } else {
           setCacheColumnKeys(getStorageKey(`${key}_all`, cache), allKeys);
         }

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { createElement, useRef, useState, useEffect, useCallback } from 'react';
 
 export interface IBuildUseCommonFormOptions<T, P> {
   /** 是否立即加载数据 */
@@ -40,7 +40,7 @@ export function buildUseCommonForm<T, P>(
     const [loading, setLoading] = useState(false);
 
     // 值变更方法
-    const changeValue = React.useCallback((nextValue: T, done?: boolean) => {
+    const changeValue = useCallback((nextValue: T, done?: boolean) => {
       setValue(nextValue);
       if (done) {
         cacheValue.current.prev = nextValue;
@@ -48,7 +48,7 @@ export function buildUseCommonForm<T, P>(
     }, []);
 
     // 值刷新方法
-    const fetchValue = React.useCallback(async () => {
+    const fetchValue = useCallback(async () => {
       setLoading(true);
       try {
         const nextValue = await getValue(
@@ -65,7 +65,7 @@ export function buildUseCommonForm<T, P>(
     }, []);
 
     // 值重置方法
-    const resetValue = React.useCallback(() => {
+    const resetValue = useCallback(() => {
       changeValue(cacheValue.current.prev);
     }, []);
 
@@ -182,7 +182,7 @@ export function withCommonForm<T, P = {}>(
       }
     }, [propsValue]);
 
-    return React.createElement(Component, {
+    return createElement(Component, {
       ...props,
       loading,
       value,

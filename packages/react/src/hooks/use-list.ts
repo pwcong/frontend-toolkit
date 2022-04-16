@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { debounce, omit } from 'lodash';
 
 /** 平台标识 */
@@ -13,7 +13,9 @@ export type IUseListData<T> = Record<string, unknown> & {
   /** 数据 */
   data: Array<T>;
   /** 数据总量 */
-  totalSize: number;
+  totalSize?: number;
+  /** 是否更多 */
+  hasMore?: boolean;
 };
 
 export type IUseListQuery = {
@@ -53,7 +55,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     relation = [],
     properties = [],
     getQuery = query => query,
-    getData = () => Promise.resolve({ data: [], totalSize: 0 }),
+    getData = () => Promise.resolve({ data: [], totalSize: 0, hasMore: false }),
   } = options;
 
   /**
@@ -66,11 +68,11 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     props: P,
     _defaultQuery?: C & Partial<IUseListQuery>
   ) {
-    const [inited, setInited] = React.useState(false);
-    const [loading, setLoading] = React.useState(immediate);
-    const [loadingMore, setLoadingMore] = React.useState(false);
+    const [inited, setInited] = useState(false);
+    const [loading, setLoading] = useState(immediate);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const defaultQuery = React.useMemo(
+    const defaultQuery = useMemo(
       () => ({
         pageNo: 1,
         pageSize: 10,
@@ -78,17 +80,17 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       }),
       []
     );
-    const [pageNo, setPageNo] = React.useState(defaultQuery.pageNo);
-    const [pageSize, setPageSize] = React.useState(defaultQuery.pageSize);
-    const [totalSize, setTotalSize] = React.useState(0);
+    const [pageNo, setPageNo] = useState(defaultQuery.pageNo);
+    const [pageSize, setPageSize] = useState(defaultQuery.pageSize);
+    const [totalSize, setTotalSize] = useState(0);
 
-    const [list, setList] = React.useState<Array<T>>([]);
-    const [data, setData] = React.useState<IUseListData<T>>({
+    const [list, setList] = useState<Array<T>>([]);
+    const [data, setData] = useState<IUseListData<T>>({
       data: list,
       totalSize: totalSize,
     });
 
-    const [query, setQuery] = React.useState({
+    const [query, setQuery] = useState({
       ...properties.reduce((p, c) => {
         if (typeof c === 'object') {
           p[c.key] = c.value;
@@ -99,56 +101,53 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       }, {} as any),
       ...omit(defaultQuery, ['pageNo', 'pageSize']),
     });
+    const [targetQuery, setTargetQuery] = useState(query);
 
     // 是否允许加载更多
-    const hasMore = React.useMemo(
-      () => pageSize * pageNo < totalSize && list.length < totalSize,
-      [pageSize, pageNo, list, totalSize]
-    );
+    const [hasMore, setHasMore] = useState(false);
 
     // 缓存变量
-    const ref = React.useRef({
+    const ref = useRef({
       props,
       pageNo,
       pageSize,
       totalSize,
-      inited,
       loading,
       loadingMore,
+      hasMore,
       query,
+      targetQuery,
       data,
       list,
       isUnmounted: false,
+      inited,
     });
 
     // 请求队列
-    const queue = React.useRef({
+    const queue = useRef({
       size: 0,
       next: Promise.resolve(),
     });
 
     // 加载中状态变更方法
-    const changeLoading = React.useCallback(
-      (active?: boolean, more?: boolean) => {
-        if (active) {
-          ref.current.loading = true;
-          setLoading(true);
-          if (more) {
-            setLoadingMore(true);
-            ref.current.loadingMore = true;
-          }
-        } else {
-          ref.current.loading = false;
-          setLoading(false);
-          ref.current.loadingMore = false;
-          setLoadingMore(false);
+    const changeLoading = useCallback((active?: boolean, more?: boolean) => {
+      if (active) {
+        ref.current.loading = true;
+        setLoading(true);
+        if (more) {
+          setLoadingMore(true);
+          ref.current.loadingMore = true;
         }
-      },
-      []
-    );
+      } else {
+        ref.current.loading = false;
+        setLoading(false);
+        ref.current.loadingMore = false;
+        setLoadingMore(false);
+      }
+    }, []);
 
     // 数据请求方法
-    const onFetch = React.useCallback(
+    const onFetch = useCallback(
       debounce(_query => {
         const run = async () => {
           try {
@@ -157,7 +156,11 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             ref.current.data = result;
             !ref.current.isUnmounted && setData(result);
 
-            const { data = [], totalSize: _totalSize = 0 } = result;
+            const {
+              data = [],
+              totalSize: _totalSize = 0,
+              hasMore: _hasMore,
+            } = result;
 
             ref.current.totalSize = _totalSize;
             !ref.current.isUnmounted && setTotalSize(_totalSize);
@@ -170,6 +173,12 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             }
             ref.current.list = _list;
             !ref.current.isUnmounted && setList(_list);
+
+            ref.current.hasMore =
+              _hasMore ??
+              (ref.current.pageSize * ref.current.pageNo < totalSize &&
+                _list.length < _totalSize);
+            !ref.current.isUnmounted && setHasMore(ref.current.hasMore);
           } catch (e) {
             console.error(e);
           } finally {
@@ -187,36 +196,27 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     );
 
     // 数据加载方法
-    const onLoad = React.useCallback(
-      (_query, _options?: { more?: boolean }) => {
-        changeLoading(true, _options?.more);
+    const onLoad = useCallback((_query, _options?: { more?: boolean }) => {
+      changeLoading(true, _options?.more);
 
-        // 通过筛选条件转换钩子函数获取转换后的请求条件
-        const newQuery = getQuery(
-          {
-            pageNo: ref.current.pageNo,
-            pageSize: ref.current.pageSize,
-            ..._query,
-          },
-          ref.current.props
-        );
+      // 通过筛选条件转换钩子函数获取转换后的请求条件
+      const newQuery = getQuery(
+        {
+          pageNo: ref.current.pageNo,
+          pageSize: ref.current.pageSize,
+          ..._query,
+        },
+        ref.current.props
+      );
 
-        // 过滤值为undefined或null的请求条件
-        const targetQuery = Object.keys(newQuery).reduce((p, c) => {
-          const v = newQuery[c];
-          if (v !== undefined && v !== null) {
-            p[c] = v;
-          }
-          return p;
-        }, {} as any);
+      ref.current.targetQuery = newQuery;
+      setTargetQuery(newQuery);
 
-        onFetch(targetQuery);
-      },
-      []
-    );
+      onFetch(newQuery);
+    }, []);
 
     // 数据刷新方法
-    const onRefresh = React.useCallback((reload?: boolean) => {
+    const onRefresh = useCallback((reload?: boolean) => {
       const _reload = reload === undefined ? true : reload;
       if (_reload) {
         ref.current.pageNo = 1;
@@ -227,18 +227,18 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     }, []);
 
     // 数据加载更多方法
-    const onLoadMore = React.useCallback(
+    const onLoadMore = useCallback(
       debounce(() => {
         changeLoading(true, true);
 
         ref.current.pageNo++;
-        setPageNo(ref.current.pageNo + 1);
+        setPageNo(ref.current.pageNo);
       }, duration),
       []
     );
 
     // 组件更新时监测页码变更，若变更自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       if (!ref.current.inited) {
         return;
       }
@@ -247,7 +247,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     }, [pageNo]);
 
     // 组件更新时监测页数和查询参数变更，若变更自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       if (!ref.current.inited) {
         return;
       }
@@ -257,7 +257,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     }, [pageSize, query]);
 
     // 组件更新时监测组件Props参数变更（通过关联属性过滤），若变更自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       if (!ref.current.inited) {
         return;
       }
@@ -269,7 +269,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     }, [props]);
 
     // 组件初始化时判断是否自动执行数据加载方法
-    React.useEffect(() => {
+    useEffect(() => {
       setInited(true);
       ref.current.inited = true;
 
@@ -291,6 +291,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       totalSize,
       hasMore,
       query,
+      targetQuery,
       list,
       data,
     };
@@ -302,6 +303,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       setPageSize,
       setTotalSize,
       setQuery,
+      setTargetQuery,
       setList,
       setData,
       onLoad,
@@ -309,10 +311,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       onLoadMore,
     };
 
-    const ret: [typeof listResult, typeof listAction] = [
-      listResult,
-      listAction,
-    ];
+    const ret = [listResult, listAction] as const;
 
     return ret;
   }
