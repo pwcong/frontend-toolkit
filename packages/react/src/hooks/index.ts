@@ -3,5 +3,7 @@ export * from './use-fetch';
 export * from './use-list';
 export * from './use-common-form';
 export * from './use-modal-form';
-export * from './use-component';
+export * from './use-default-props';
+export * from './use-change-prop';
 export * from './use-column';
+export * from './use-value';

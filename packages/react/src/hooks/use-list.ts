@@ -106,6 +106,9 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     // 是否允许加载更多
     const [hasMore, setHasMore] = useState(false);
 
+    // 错误信息
+    const [error, setError] = useState<any>();
+
     // 缓存变量
     const ref = useRef({
       props,
@@ -121,6 +124,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       list,
       isUnmounted: false,
       inited,
+      error,
     });
 
     // 请求队列
@@ -179,9 +183,13 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
               (ref.current.pageSize * ref.current.pageNo < totalSize &&
                 _list.length < _totalSize);
             !ref.current.isUnmounted && setHasMore(ref.current.hasMore);
-          } catch (e) {
-            console.error(e);
+
+            ref.current.error = undefined;
+          } catch (err) {
+            ref.current.error = err;
           } finally {
+            !ref.current.isUnmounted && setError(ref.current.error);
+
             queue.current.size--;
             !ref.current.isUnmounted &&
               queue.current.size <= 0 &&
@@ -295,7 +303,9 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       targetQuery,
       list,
       data,
+      error,
     };
+
     const listAction = {
       setInited,
       setLoading,
@@ -307,6 +317,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       setTargetQuery,
       setList,
       setData,
+      setError,
       onLoad,
       onRefresh,
       onLoadMore,

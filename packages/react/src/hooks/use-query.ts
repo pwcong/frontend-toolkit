@@ -23,8 +23,8 @@ export function buildUseQuery(options?: IBuildUseQueryOptions) {
   const {
     name = 'query',
     transform = {
-      encode: (query: any) => encodeURIComponent(JSON.stringify(query)),
-      decode: (str: string) => JSON.parse(decodeURIComponent(str)),
+      encode: JSON.stringify,
+      decode: JSON.parse,
     },
   } = options ?? {};
 

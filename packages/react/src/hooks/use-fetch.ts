@@ -56,15 +56,19 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     });
     const [targetQuery, setTargetQuery] = useState(query);
 
+    // 错误信息
+    const [error, setError] = useState<any>();
+
     // 缓存变量
     const ref = useRef({
       props,
-      inited,
       loading,
       query,
       targetQuery,
       data,
       isUnmounted: false,
+      inited,
+      error,
     });
 
     // 请求队列
@@ -82,9 +86,13 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
             ref.current.data = _data;
             !ref.current.isUnmounted && setData(_data);
-          } catch (e) {
-            console.error(e);
+
+            ref.current.error = undefined;
+          } catch (err) {
+            ref.current.error = err;
           } finally {
+            !ref.current.isUnmounted && setError(ref.current.error);
+
             queue.current.size--;
             ref.current.loading = false;
             !ref.current.isUnmounted &&
@@ -165,6 +173,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       query,
       targetQuery,
       data,
+      error,
     };
 
     const fetchAction = {
@@ -173,6 +182,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       setQuery,
       setTargetQuery,
       setData,
+      setError,
       onLoad,
       onRefresh,
     };
