@@ -1,4 +1,4 @@
-import {
+import React, {
   createElement,
   cloneElement,
   Fragment,
@@ -35,6 +35,24 @@ export type IColumnChangerProps = {
   onReset?: () => void;
 };
 
+export type IUseColumnsConfig<C extends Record<any, any> = {}> = C & {
+  /** 列配置标识 */
+  key: IColumnKey;
+  /** 列配置 */
+  columns: Record<any, any>[];
+  /** 默认列 */
+  defaultKeys?: IColumnKeys;
+};
+
+export type IUseColumnsConfigs<
+  C extends Record<any, any> = {}
+> = IUseColumnsConfig<C>[];
+
+export type IUseColumnsOptions = {
+  /** 是否开启缓存 */
+  cache?: boolean | string;
+};
+
 export type IBuildUseColumnsOptions<C extends Record<any, any> = {}> = {
   /** 标识字段名 */
   keyProperty: string;
@@ -42,35 +60,22 @@ export type IBuildUseColumnsOptions<C extends Record<any, any> = {}> = {
   titleProperty: string;
   /** 动态字段名 */
   dynamicProperty: string;
+  /** 列配置容器渲染函数 */
+  renderWrapper?: (
+    changers: Array<{
+      changer: React.ReactElement;
+      config: IUseColumnsConfig<C>;
+    }>
+  ) => React.ReactElement;
   /** 列配置组件渲染函数 */
   renderChanger: (
     props: IColumnChangerProps,
-    config: IUseColumnsConfig<Record<any, any>, C>
+    config: IUseColumnsConfig<C>
   ) => React.ReactElement;
   /** 列触发组件渲染函数 */
   renderTrigger: (node: React.ReactElement) => React.ReactElement;
-};
-
-export type IUseColumnsConfig<
-  R extends Record<any, any> = Record<any, any>,
-  C extends Record<any, any> = {}
-> = C & {
-  /** 列配置标识 */
-  key: IColumnKey;
-  /** 列配置 */
-  columns: R[];
-  /** 默认列 */
-  defaultKeys?: IColumnKeys;
-};
-
-export type IUseColumnsConfigs<
-  R extends Record<any, any> = Record<any, any>,
-  C extends Record<any, any> = {}
-> = IUseColumnsConfig<R, C>[];
-
-export type IUseColumnsOptions = {
-  /** 是否开启缓存 */
-  cache?: boolean | string;
+  /** 是否开启排序 */
+  useSorter?: boolean;
 };
 
 // 默认缓存key
@@ -124,8 +129,15 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
     keyProperty,
     titleProperty,
     dynamicProperty,
+    renderWrapper = changers =>
+      createElement(
+        Fragment,
+        undefined,
+        changers.map(c => c.changer)
+      ),
     renderChanger,
     renderTrigger,
+    useSorter,
   } = buildOptions;
 
   /**
@@ -134,8 +146,8 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
    * @param options 可选配置
    * @returns
    */
-  function useColumns<R extends Record<any, any> = Record<any, any>>(
-    configs: IUseColumnsConfigs<R, C>,
+  function useColumns(
+    configs: IUseColumnsConfigs<C>,
     options?: IUseColumnsOptions
   ) {
     const { cache } = options ?? {};
@@ -159,10 +171,21 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
     }, []);
 
     const columnss = useMemo(() => {
-      return configs.map(({ columns }, index) =>
-        columns.filter(column => keyss[index]?.includes?.(column[keyProperty]))
-      );
-    }, [keyss]);
+      return configs.map(({ columns }, index) => {
+        const keys = keyss[index] ?? [];
+
+        if (useSorter) {
+          const columnsMap = columns.reduce((p, c) => {
+            p[c[keyProperty]] = c;
+            return p;
+          }, {} as Record<IColumnKey, IColumn>);
+
+          return keys.filter(k => !!columnsMap[k]).map(k => columnsMap[k]);
+        }
+
+        return columns.filter(column => keys.includes?.(column[keyProperty]));
+      });
+    }, [keyss, configs]);
 
     const trigger = useMemo(() => {
       const changers = configs.map((config, index) => {
@@ -172,7 +195,8 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
           title: column[titleProperty],
           dynamic: column[dynamicProperty],
         }));
-        return cloneElement(
+
+        const changer = cloneElement(
           renderChanger(
             {
               columns: _columns,
@@ -190,10 +214,14 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
             key,
           }
         );
+        return {
+          changer,
+          config,
+        };
       });
 
-      return renderTrigger(createElement(Fragment, undefined, changers));
-    }, [keyss]);
+      return renderTrigger(renderWrapper(changers));
+    }, [keyss, configs]);
 
     useEffect(() => {
       const newKeyss = configs.map(({ key, columns, defaultKeys }) => {
@@ -223,7 +251,7 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
       setKeyss(newKeyss);
     }, []);
 
-    const ret = [columnss, trigger] as const;
+    const ret = [columnss, trigger, keyss] as const;
 
     return ret;
   }

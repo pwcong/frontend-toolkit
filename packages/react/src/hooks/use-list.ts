@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { debounce, omit } from 'lodash';
 
+import { useQueue } from './use-queue';
+import { useUnmounted } from './use-unmounted';
+
 /** 平台标识 */
 export enum EListPlatform {
   /** 桌面端 */
@@ -122,16 +125,15 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       targetQuery,
       data,
       list,
-      isUnmounted: false,
       inited,
       error,
     });
 
+    // 挂载状态
+    const [, runWithoutUnmounted] = useUnmounted();
+
     // 请求队列
-    const queue = useRef({
-      size: 0,
-      next: Promise.resolve(),
-    });
+    const [, runWithQueue] = useQueue();
 
     // 加载中状态变更方法
     const changeLoading = useCallback((active?: boolean, more?: boolean) => {
@@ -153,12 +155,12 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     // 数据请求方法
     const onFetch = useCallback(
       debounce(_query => {
-        const run = async () => {
+        const fetch = async () => {
           try {
             const result = await getData(_query, ref.current.props);
 
             ref.current.data = result;
-            !ref.current.isUnmounted && setData(result);
+            runWithoutUnmounted(() => setData(result));
 
             const {
               data = [],
@@ -167,7 +169,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             } = result;
 
             ref.current.totalSize = _totalSize;
-            !ref.current.isUnmounted && setTotalSize(_totalSize);
+            runWithoutUnmounted(() => setTotalSize(_totalSize));
 
             let _list: Array<T> = [];
             if (ref.current.loadingMore) {
@@ -176,29 +178,24 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
               _list = data;
             }
             ref.current.list = _list;
-            !ref.current.isUnmounted && setList(_list);
+            runWithoutUnmounted(() => setList(_list));
 
             ref.current.hasMore =
               _hasMore ??
               (ref.current.pageSize * ref.current.pageNo < totalSize &&
                 _list.length < _totalSize);
-            !ref.current.isUnmounted && setHasMore(ref.current.hasMore);
+            runWithoutUnmounted(() => setHasMore(ref.current.hasMore));
 
             ref.current.error = undefined;
           } catch (err) {
             ref.current.error = err;
-          } finally {
-            !ref.current.isUnmounted && setError(ref.current.error);
-
-            queue.current.size--;
-            !ref.current.isUnmounted &&
-              queue.current.size <= 0 &&
-              changeLoading(false);
+            runWithoutUnmounted(() => setError(ref.current.error));
           }
         };
 
-        queue.current.size++;
-        queue.current.next = queue.current.next.then(run);
+        runWithQueue(fetch, () => {
+          runWithoutUnmounted(() => changeLoading(false));
+        });
       }, duration),
       []
     );
@@ -225,7 +222,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
 
     // 数据刷新方法
     const onRefresh = useCallback((reload?: boolean) => {
-      const _reload = reload === undefined ? true : reload;
+      const _reload = typeof reload === 'boolean' ? reload : false;
       if (_reload) {
         ref.current.pageNo = 1;
         setPageNo(1);
@@ -280,15 +277,10 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     useEffect(() => {
       setInited(true);
       ref.current.inited = true;
-      ref.current.isUnmounted = false;
 
       if (immediate) {
         onLoad(ref.current.query);
       }
-
-      return () => {
-        ref.current.isUnmounted = true;
-      };
     }, []);
 
     const listResult = {

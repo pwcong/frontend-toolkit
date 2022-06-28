@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { debounce } from 'lodash';
 
+import { useUnmounted } from './use-unmounted';
+import { useQueue } from './use-queue';
+
 export interface IBuildUseFetchOptions<T, P> {
   /** 是否立即查询，默认值为true */
   immediate?: boolean;
@@ -66,43 +69,36 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       query,
       targetQuery,
       data,
-      isUnmounted: false,
       inited,
       error,
     });
 
+    // 挂载状态
+    const [, runWithoutUnmounted] = useUnmounted();
+
     // 请求队列
-    const queue = useRef({
-      size: 0,
-      next: Promise.resolve(),
-    });
+    const [, runWithQueue] = useQueue();
 
     // 数据请求方法
     const onFetch = useCallback(
       debounce(_query => {
-        const run = async () => {
+        const fetch = async () => {
           try {
             const _data = await getData(_query, ref.current.props);
 
             ref.current.data = _data;
-            !ref.current.isUnmounted && setData(_data);
+            runWithoutUnmounted(() => setData(_data));
 
             ref.current.error = undefined;
           } catch (err) {
             ref.current.error = err;
-          } finally {
-            !ref.current.isUnmounted && setError(ref.current.error);
-
-            queue.current.size--;
-            ref.current.loading = false;
-            !ref.current.isUnmounted &&
-              queue.current.size <= 0 &&
-              setLoading(false);
+            runWithoutUnmounted(() => setError(ref.current.error));
           }
         };
 
-        queue.current.size++;
-        queue.current.next = queue.current.next.then(run);
+        runWithQueue(fetch, () => {
+          runWithoutUnmounted(() => setLoading(false));
+        });
       }, duration),
       []
     );
@@ -156,15 +152,10 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     useEffect(() => {
       setInited(true);
       ref.current.inited = true;
-      ref.current.isUnmounted = false;
 
       if (immediate) {
         onLoad(ref.current.query);
       }
-
-      return () => {
-        ref.current.isUnmounted = true;
-      };
     }, []);
 
     const fetchResult = {
