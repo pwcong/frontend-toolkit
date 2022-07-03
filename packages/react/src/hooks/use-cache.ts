@@ -5,7 +5,7 @@ import { useEffect, useRef as useOriginRef } from 'react';
  * @param value 值
  * @returns
  */
-export function useRef<T = unknown>(value: T) {
+export function useCache<T = unknown>(value: T) {
   const ref = useOriginRef<T>(value);
 
   useEffect(() => {

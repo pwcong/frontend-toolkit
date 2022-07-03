@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 import { getDisplayName } from '../utils';
-import { useRef } from './use-ref';
+import { useCache } from './use-cache';
 import { useQueue } from './use-queue';
 
 type IChangeFn<T> = (value?: T, ...args: any[]) => void;
@@ -46,7 +46,7 @@ export function withChangeProp<T = any, P = {}, R = any>(
     ) => {
       const { value, onChange, ...restProps } = props;
 
-      const propsRef = useRef(props);
+      const propsRef = useCache(props);
 
       const handleChange = useCallback(
         ((newValue, ...args) => {
@@ -102,7 +102,7 @@ export function withAsyncChangeProp<T = any, P = {}, R = any>(
       const { value, onChange, ...restProps } = props;
       const [currentValue, setCurrentValue] = useState<T | undefined>();
 
-      const propsRef = useRef(props);
+      const propsRef = useCache(props);
 
       const [, run] = useQueue();
 

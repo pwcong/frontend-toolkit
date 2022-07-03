@@ -92,6 +92,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
             ref.current.error = undefined;
           } catch (err) {
             ref.current.error = err;
+          } finally {
             runWithoutUnmounted(() => setError(ref.current.error));
           }
         };

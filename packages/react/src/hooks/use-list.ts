@@ -189,6 +189,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             ref.current.error = undefined;
           } catch (err) {
             ref.current.error = err;
+          } finally {
             runWithoutUnmounted(() => setError(ref.current.error));
           }
         };

@@ -7,6 +7,6 @@ export * from './use-default-props';
 export * from './use-change-prop';
 export * from './use-column';
 export * from './use-value';
-export * from './use-ref';
+export * from './use-cache';
 export * from './use-queue';
 export * from './use-unmounted';
