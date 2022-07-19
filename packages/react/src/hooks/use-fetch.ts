@@ -81,7 +81,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
     // 数据请求方法
     const onFetch = useCallback(
-      debounce(_query => {
+      debounce((_query, onComplete?: () => void) => {
         const fetch = async () => {
           try {
             const _data = await getData(_query, ref.current.props);
@@ -99,13 +99,14 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
         runWithQueue(fetch, () => {
           runWithoutUnmounted(() => setLoading(false));
+          onComplete?.();
         });
       }, duration),
       []
     );
 
     // 数据加载方法
-    const onLoad = useCallback(_query => {
+    const onLoad = useCallback((_query, onComplete?: () => void) => {
       ref.current.loading = true;
       setLoading(true);
 
@@ -120,12 +121,12 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       ref.current.targetQuery = newQuery;
       setTargetQuery(newQuery);
 
-      onFetch(newQuery);
+      onFetch(newQuery, onComplete);
     }, []);
 
     // 数据刷新方法
-    const onRefresh = useCallback(() => {
-      onLoad(ref.current.query);
+    const onRefresh = useCallback((onComplete?: () => void) => {
+      onLoad(ref.current.query, onComplete);
     }, []);
 
     // 组件更新时监测查询参数变更，若变更自动执行数据加载方法
@@ -134,6 +135,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
         return;
       }
       ref.current.query = query;
+
       onRefresh();
     }, [query]);
 

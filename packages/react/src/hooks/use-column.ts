@@ -3,7 +3,6 @@ import React, {
   cloneElement,
   Fragment,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -152,7 +151,34 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
   ) {
     const { cache } = options ?? {};
 
-    const [keyss, setKeyss] = useState<IColumnKeys[]>(configs.map(() => []));
+    const storagedKeyss = useMemo(() => {
+      const newKeyss = configs.map(({ key, columns, defaultKeys }) => {
+        const allKeys = columns.map(column => column[keyProperty]);
+
+        let keys = defaultKeys ?? allKeys;
+
+        if (!cache) {
+          return keys;
+        }
+
+        const _allKeys = getCacheColumnKeys(
+          getStorageKey(`${key}_all`, cache),
+          []
+        );
+
+        if (isSameKey(allKeys, _allKeys)) {
+          keys = getCacheColumnKeys(getStorageKey(`${key}_cur`, cache), keys);
+        } else {
+          setCacheColumnKeys(getStorageKey(`${key}_all`, cache), allKeys);
+        }
+
+        return keys;
+      });
+
+      return newKeyss;
+    }, [configs]);
+
+    const [keyss, setKeyss] = useState<IColumnKeys[]>(storagedKeyss);
     const cacheKeyss = useRef(keyss);
 
     const handleSetKeys = useCallback((value: IColumnKeys, index: number) => {
@@ -222,34 +248,6 @@ export function buildUseColumns<C extends Record<any, any> = {}>(
 
       return renderTrigger(renderWrapper(changers));
     }, [keyss, configs]);
-
-    useEffect(() => {
-      const newKeyss = configs.map(({ key, columns, defaultKeys }) => {
-        const allKeys = columns.map(column => column[keyProperty]);
-
-        let keys = defaultKeys ?? allKeys;
-
-        if (!cache) {
-          return keys;
-        }
-
-        const _allKeys = getCacheColumnKeys(
-          getStorageKey(`${key}_all`, cache),
-          []
-        );
-
-        if (isSameKey(allKeys, _allKeys)) {
-          keys = getCacheColumnKeys(getStorageKey(`${key}_cur`, cache), keys);
-        } else {
-          setCacheColumnKeys(getStorageKey(`${key}_all`, cache), allKeys);
-        }
-
-        return keys;
-      });
-
-      cacheKeyss.current = newKeyss;
-      setKeyss(newKeyss);
-    }, []);
 
     const ret = [columnss, trigger, keyss] as const;
 

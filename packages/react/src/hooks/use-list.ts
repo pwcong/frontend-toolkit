@@ -154,7 +154,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
 
     // 数据请求方法
     const onFetch = useCallback(
-      debounce(_query => {
+      debounce((_query, onComplete?: () => void) => {
         const fetch = async () => {
           try {
             const result = await getData(_query, ref.current.props);
@@ -182,7 +182,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
 
             ref.current.hasMore =
               _hasMore ??
-              (ref.current.pageSize * ref.current.pageNo < totalSize &&
+              (ref.current.pageSize * ref.current.pageNo < _totalSize &&
                 _list.length < _totalSize);
             runWithoutUnmounted(() => setHasMore(ref.current.hasMore));
 
@@ -196,14 +196,15 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
 
         runWithQueue(fetch, () => {
           runWithoutUnmounted(() => changeLoading(false));
+          onComplete?.();
         });
       }, duration),
       []
     );
 
     // 数据加载方法
-    const onLoad = useCallback((_query, _options?: { more?: boolean }) => {
-      changeLoading(true, _options?.more);
+    const onLoad = useCallback((_query, onComplete?: () => void) => {
+      changeLoading(true);
 
       // 通过筛选条件转换钩子函数获取转换后的请求条件
       const newQuery = getQuery(
@@ -218,19 +219,22 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       ref.current.targetQuery = newQuery;
       setTargetQuery(newQuery);
 
-      onFetch(newQuery);
+      onFetch(newQuery, onComplete);
     }, []);
 
     // 数据刷新方法
-    const onRefresh = useCallback((reload?: boolean) => {
-      const _reload = typeof reload === 'boolean' ? reload : false;
-      if (_reload) {
-        ref.current.pageNo = 1;
-        setPageNo(1);
-      }
+    const onRefresh = useCallback(
+      (reload?: boolean, onComplete?: () => void) => {
+        const _reload = typeof reload === 'boolean' ? reload : false;
+        if (_reload) {
+          ref.current.pageNo = 1;
+          setPageNo(1);
+        }
 
-      onLoad(ref.current.query);
-    }, []);
+        onLoad(ref.current.query, onComplete);
+      },
+      []
+    );
 
     // 数据加载更多方法
     const onLoadMore = useCallback(
