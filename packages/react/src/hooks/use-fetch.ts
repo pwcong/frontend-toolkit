@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { debounce } from 'lodash';
+import { debounce } from 'throttle-debounce';
 
 import { useUnmounted } from './use-unmounted';
 import { useQueue } from './use-queue';
@@ -9,7 +9,9 @@ export interface IBuildUseFetchOptions<T, P> {
   immediate?: boolean;
   /** 防抖间隔（毫秒），默认值为300 */
   duration?: number;
-  /** 关联属性，默认值为空数组 */
+  /** 依赖属性 */
+  deps?: Array<string>;
+  /** [Deprecated] 关联属性，默认值为空数组 */
   relation?: Array<string>;
   /** 筛选条件，默认值为空数组 */
   properties?: Array<string | { key: string; value: any }>;
@@ -28,11 +30,13 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
   const {
     immediate = true,
     duration = 200,
-    relation = [],
+    relation: _deps = [],
     properties = [],
     getQuery = query => query,
     getData = () => Promise.resolve(undefined),
   } = options;
+
+  const deps = options.deps ?? _deps;
 
   /**
    * 数据请求Hook
@@ -81,7 +85,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
 
     // 数据请求方法
     const onFetch = useCallback(
-      debounce((_query, onComplete?: () => void) => {
+      debounce(duration, (_query, onComplete?: () => void) => {
         const fetch = async () => {
           try {
             const _data = await getData(_query, ref.current.props);
@@ -101,7 +105,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
           runWithoutUnmounted(() => setLoading(false));
           onComplete?.();
         });
-      }, duration),
+      }),
       []
     );
 
@@ -146,7 +150,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       }
       const oldProps = ref.current.props;
       ref.current.props = props;
-      if (relation.find(p => (oldProps as any)[p] !== (props as any)[p])) {
+      if (deps.find(p => (oldProps as any)[p] !== (props as any)[p])) {
         onRefresh();
       }
     }, [props]);
@@ -168,6 +172,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
       targetQuery,
       data,
       error,
+      ref,
     };
 
     const fetchAction = {
