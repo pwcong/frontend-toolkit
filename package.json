@@ -1,7 +1,7 @@
 {
   "name": "frontend-toolkit",
   "private": true,
-  "author": "Weicong Peng",
+  "author": "Pwcong<pwcong@foxmail.com>",
   "devDependencies": {
     "@changesets/cli": "^2.26.0"
   }
