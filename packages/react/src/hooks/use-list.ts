@@ -51,9 +51,13 @@ export interface IBuildUseListOptions<T, P> {
   /** 筛选条件，默认值为空数组 */
   properties?: Array<string | { key: string; value: any }>;
   /** 筛选条件转换钩子函数 */
-  getQuery?: (query: any, props: P) => any;
+  getQuery?: (query: any, props: P, data: IUseListData<T>) => any;
   /** 加载数据钩子函数 */
-  getData?: (query: any, props: P) => Promise<IUseListData<T>>;
+  getData?: (
+    query: any,
+    props: P,
+    data: IUseListData<T>
+  ) => Promise<IUseListData<T>>;
   /** 加载数据的队列类型，默认值为queue */
   queueType?: IUseListQueueType;
 }
@@ -106,7 +110,6 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     const [list, setList] = useState<Array<T>>([]);
     const [data, setData] = useState<IUseListData<T>>({
       data: list,
-      totalSize: totalSize,
     });
 
     const [query, setQuery] = useState({
@@ -169,7 +172,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       }
     }, []);
 
-    const updateResult = useCallback((result: IUseListData<T>) => {
+    const changeResult = useCallback((result: IUseListData<T>) => {
       unstable_batchedUpdates(() => {
         ref.current.data = result;
         runWithoutUnmounted(() => setData(result));
@@ -210,8 +213,12 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             runWithQueue(
               async () => {
                 try {
-                  const result = await getData(_query, ref.current.props);
-                  updateResult(result ?? {});
+                  const result = await getData(
+                    _query,
+                    ref.current.props,
+                    ref.current.data
+                  );
+                  changeResult(result ?? {});
                   return result;
                 } catch (err) {
                   ref.current.error = err;
@@ -230,7 +237,11 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
             runWithUnique(
               async () => {
                 try {
-                  const result = await getData(_query, ref.current.props);
+                  const result = await getData(
+                    _query,
+                    ref.current.props,
+                    ref.current.data
+                  );
                   return result;
                 } catch (err) {
                   ref.current.error = err;
@@ -239,7 +250,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
                   runWithoutUnmounted(() => setError(ref.current.error));
                 }
               },
-              (result: IUseListData<T>) => updateResult(result ?? {}),
+              (result: IUseListData<T>) => changeResult(result ?? {}),
               () => {
                 runWithoutUnmounted(() => changeLoading(false));
                 onComplete?.();
@@ -254,7 +265,7 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
     );
 
     // 数据加载方法
-    const onLoad = useCallback((_query, onComplete?: () => void) => {
+    const onLoad = useCallback((_query: any, onComplete?: () => void) => {
       changeLoading(true);
 
       // 通过筛选条件转换钩子函数获取转换后的请求条件
@@ -264,7 +275,8 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
           pageSize: ref.current.pageSize,
           ..._query,
         },
-        ref.current.props
+        ref.current.props,
+        ref.current.data
       );
 
       ref.current.targetQuery = newQuery;
@@ -278,6 +290,10 @@ export function buildUseList<T, P = {}>(options: IBuildUseListOptions<T, P>) {
       (reload?: boolean, onComplete?: () => void) => {
         const _reload = typeof reload === 'boolean' ? reload : false;
         if (_reload) {
+          ref.current.data = {
+            data: [],
+          };
+
           ref.current.pageNo = 1;
           setPageNo(1);
         }

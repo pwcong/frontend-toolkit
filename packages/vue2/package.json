@@ -8,21 +8,24 @@
     "src"
   ],
   "engines": {
-    "node": ">=10"
+    "node": ">=12"
   },
   "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
-    "test": "tsdx test",
-    "lint": "tsdx lint",
-    "prepare": "tsdx build",
+    "analyze": "size-limit --why",
+    "build": "dts build",
+    "lint": "dts lint",
+    "prepare": "dts build",
     "size": "size-limit",
-    "analyze": "size-limit --why"
+    "start": "dts watch",
+    "test": "dts test"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "tsdx lint"
+      "pre-commit": "dts lint"
     }
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "prettier": {
     "printWidth": 80,
@@ -44,13 +47,14 @@
     }
   ],
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^5.0.1",
-    "@types/lodash-es": "^4.17.4",
-    "husky": "^7.0.1",
-    "size-limit": "^5.0.1",
-    "tsdx": "^0.14.1",
-    "tslib": "^2.3.0",
-    "typescript": "^4.3.5"
+    "@size-limit/preset-small-lib": "^8.1.2",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/lodash-es": "^4.17.7",
+    "dts-cli": "^2.0.0",
+    "husky": "^8.0.3",
+    "size-limit": "^8.1.2",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
   },
   "dependencies": {
     "lodash-es": "^4.17.21"

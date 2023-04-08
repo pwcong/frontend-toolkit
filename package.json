@@ -1,10 +1,8 @@
 {
   "name": "frontend-toolkit",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "author": "Weicong Peng",
   "devDependencies": {
-    "lerna": "^4.0.0"
+    "@changesets/cli": "^2.26.0"
   }
 }

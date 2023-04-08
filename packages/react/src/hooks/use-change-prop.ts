@@ -58,7 +58,7 @@ export function withChangeProp<T = any, P = {}, R = any>(
       return createElement(Component, {
         ...restProps,
         ref,
-        value: input(value, props as P),
+        value: input(value, props),
         onChange: handleChange,
       });
     };

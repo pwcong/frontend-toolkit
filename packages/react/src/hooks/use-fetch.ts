@@ -110,7 +110,7 @@ export function buildUseFetch<T, P = {}>(options: IBuildUseFetchOptions<T, P>) {
     );
 
     // 数据加载方法
-    const onLoad = useCallback((_query, onComplete?: () => void) => {
+    const onLoad = useCallback((_query: any, onComplete?: () => void) => {
       ref.current.loading = true;
       setLoading(true);
 

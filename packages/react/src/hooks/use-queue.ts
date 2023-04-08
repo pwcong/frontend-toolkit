@@ -16,6 +16,7 @@ export function useQueue<T = any>() {
   const run = useCallback(async (fn: IQueueFn<T>, onComplete?: () => void) => {
     queue.current.size++;
     try {
+      // @ts-ignore
       queue.current.next = queue.current.next.catch(() => {}).then(fn);
       await queue.current.next;
     } finally {

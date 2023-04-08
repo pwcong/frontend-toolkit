@@ -82,7 +82,7 @@ export function buildListMixin<T>(options: IBuildListMixinOptions<T>) {
     created() {
       const ctx: any = this;
 
-      ctx.onLoad = debounce(function(query) {
+      ctx.onLoad = debounce(function(query: any) {
         ctx.loading = true;
 
         setTimeout(async () => {
