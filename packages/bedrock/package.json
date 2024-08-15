@@ -1,6 +1,6 @@
 {
   "name": "@frontend-toolkit/bedrock",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "Pwcong<pwcong@foxmail.com>",
   "types": "./dist/types/index.d.ts",
   "main": "./dist/lib/index.js",

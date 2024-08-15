@@ -1,10 +1,7 @@
-import { BaseUndoRedoItem } from './undo-redo-item';
+import { UndoRedoItem } from './undo-redo-item';
 import { UndoRedoType } from './interface';
 
-export class BaseUndoRedoStack<
-  T,
-  P extends BaseUndoRedoItem<T> = BaseUndoRedoItem<T>,
-> {
+export class UndoRedoStack<T, P extends UndoRedoItem<T> = UndoRedoItem<T>> {
   undoStack: P[] = [];
 
   redoStack: P[] = [];
@@ -69,7 +66,7 @@ export class BaseUndoRedoStack<
     this.maxStackSize = size;
   }
 
-  getTopItem(): BaseUndoRedoItem<T> | undefined {
+  getTopItem(): UndoRedoItem<T> | undefined {
     return this.undoStack[0];
   }
 

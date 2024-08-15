@@ -4,7 +4,7 @@ import {
   UndoRedoType,
 } from './interface';
 
-export interface IBaseUndoRedoItemOptions<T> {
+export interface IUndoRedoItemOptions<T> {
   redoCommand: T;
   undoCommand: T;
   executeCommand: (command: T, type: UndoRedoType) => void;
@@ -12,7 +12,7 @@ export interface IBaseUndoRedoItemOptions<T> {
   operateType: UndoRedoItemOperateType;
 }
 
-export class BaseUndoRedoItem<T> implements IBaseUndoRedoItem<T> {
+export class UndoRedoItem<T> implements IBaseUndoRedoItem<T> {
   redoCommand: T;
 
   undoCommand: T;
@@ -21,9 +21,9 @@ export class BaseUndoRedoItem<T> implements IBaseUndoRedoItem<T> {
 
   operateType: UndoRedoItemOperateType;
 
-  protected executeCommand: IBaseUndoRedoItemOptions<T>['executeCommand'];
+  protected executeCommand: IUndoRedoItemOptions<T>['executeCommand'];
 
-  constructor(options: IBaseUndoRedoItemOptions<T>) {
+  constructor(options: IUndoRedoItemOptions<T>) {
     this.redoCommand = options.redoCommand;
     this.undoCommand = options.undoCommand;
     this.canUndoRedo = options.canUndoRedo !== false;
@@ -34,7 +34,7 @@ export class BaseUndoRedoItem<T> implements IBaseUndoRedoItem<T> {
   reverse(): IBaseUndoRedoItem<T> {
     const { undoCommand, redoCommand, operateType } = this;
 
-    return new BaseUndoRedoItem({
+    return new UndoRedoItem({
       undoCommand: redoCommand,
       redoCommand: undoCommand,
       executeCommand: this.executeCommand,
