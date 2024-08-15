@@ -21,8 +21,8 @@ export function buildWithData<T>(options: IBuildWithDataOptions<T>) {
   return function withData(Component: any, componentName: string) {
     return {
       name: componentName,
-      mixins: [omit(Component, ['props'])],
-      props: Object.assign({}, omit(Component.props, [property]), properties),
+      mixins: [omit(Component as object, ['props'])],
+      props: Object.assign({}, omit(Component.props as object, [property]), properties),
       data() {
         return {
           [property]: data,

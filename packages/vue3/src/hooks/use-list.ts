@@ -1,6 +1,15 @@
-import { ref, reactive, computed, watch, onActivated } from 'vue';
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onActivated,
+  Ref,
+  UnwrapRef,
+  ComputedRef,
+} from 'vue';
 
-import { debounce } from 'lodash-es';
+import { debounce, DebouncedFunc } from 'lodash-es';
 
 export enum EListPlatform {
   'Desktop' = 'Desktop',
@@ -22,15 +31,37 @@ export interface IBuildUseListOptions<T, P> {
   properties?: Array<string | { key: string; value: any }>;
   getQuery?: (
     props: P,
-    query: { [key: string]: any }
+    query: { [key: string]: any },
   ) => { [key: string]: any };
   getData?: (
     props: P,
-    query: { [key: string]: any }
+    query: { [key: string]: any },
   ) => Promise<{ data: Array<T>; totalSize: number }>;
 }
 
-export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
+export type IUseListRet<T> = {
+  inited: Ref<boolean>;
+  loading: Ref<boolean>;
+  loadingMore: Ref<boolean>;
+  list: Ref<UnwrapRef<T>[]>;
+  query: { [key: string]: any };
+  pageNo: Ref<number>;
+  pageSize: Ref<number>;
+  totalSize: Ref<number>;
+  hasMore: ComputedRef<boolean>;
+  onLoad: DebouncedFunc<(query: any) => void>;
+  onRefresh: DebouncedFunc<(reload: boolean) => void>;
+  onLoadMore: DebouncedFunc<() => void>;
+};
+
+export type IBuildUseListRet<T, P> = (
+  props: P,
+  defaultQuery?: IUseListQuery,
+) => IUseListRet<T>;
+
+export function buildUseList<T, P>(
+  options: IBuildUseListOptions<T, P>,
+): IBuildUseListRet<T, P> {
   const {
     platform = EListPlatform.Desktop,
     immediate = true,
@@ -55,7 +86,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
           p[c] = undefined;
         }
         return p;
-      }, {} as { [key: string]: any })
+      }, {} as { [key: string]: any }),
     );
 
     defaultQuery = Object.assign(
@@ -63,7 +94,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
         pageNo: 1,
         pageSize: 10,
       },
-      defaultQuery
+      defaultQuery,
     );
 
     const pageNo = ref(defaultQuery.pageNo);
@@ -72,10 +103,10 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
     const hasMore = computed(
       () =>
         pageSize.value * pageNo.value < totalSize.value &&
-        list.value.length < totalSize.value
+        list.value.length < totalSize.value,
     );
 
-    const onLoad = debounce(function(query) {
+    const onLoad = debounce(function (query) {
       loading.value = true;
 
       setTimeout(async () => {
@@ -87,8 +118,8 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
                 pageNo: pageNo.value,
                 pageSize: pageSize.value,
               },
-              query
-            )
+              query,
+            ),
           );
 
           const targetQuery = Object.keys(query).reduce((p, c) => {
@@ -101,7 +132,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
 
           const { data = [], totalSize: _totalSize = 0 } = await getData(
             props,
-            targetQuery
+            targetQuery,
           );
 
           totalSize.value = _totalSize;
@@ -122,7 +153,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
       });
     }, duration);
 
-    const onRefresh = debounce(function(reload?: boolean) {
+    const onRefresh = debounce(function (reload?: boolean) {
       if (reload === undefined) {
         reload = true;
       }
@@ -134,7 +165,7 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
       onLoad(query);
     }, duration);
 
-    const onLoadMore = debounce(function() {
+    const onLoadMore = debounce(function () {
       if (loading.value) {
         return;
       }
@@ -155,17 +186,17 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
       },
       {
         deep: true,
-      }
+      },
     );
 
     relation.forEach(p =>
       watch(
         () => (props as any)[p],
-        () => onRefresh(true)
-      )
+        () => onRefresh(true),
+      ),
     );
 
-    onActivated(function() {
+    onActivated(function () {
       if (immediate) {
         if (inited.value) {
           onRefresh(platform === EListPlatform.Mobile);
@@ -191,6 +222,6 @@ export function buildUseList<T, P>(options: IBuildUseListOptions<T, P>) {
       onLoad,
       onRefresh,
       onLoadMore,
-    };
+    } as IUseListRet<T>;
   };
 }

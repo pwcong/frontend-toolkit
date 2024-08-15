@@ -1,62 +1,48 @@
 {
-  "version": "0.0.1",
-  "license": "MIT",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "src"
-  ],
-  "engines": {
-    "node": ">=12"
-  },
-  "scripts": {
-    "analyze": "size-limit --why",
-    "build": "dts build",
-    "lint": "dts lint",
-    "prepare": "dts build",
-    "size": "size-limit",
-    "start": "dts watch",
-    "test": "dts test"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "dts lint"
-    }
-  },
-  "jest": {
-    "testEnvironment": "node"
-  },
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
   "name": "@frontend-toolkit/vue2",
+  "version": "0.0.1",
   "author": "Pwcong<pwcong@foxmail.com>",
-  "module": "dist/vue2.esm.js",
-  "size-limit": [
-    {
-      "path": "dist/vue2.cjs.production.min.js",
-      "limit": "10 KB"
-    },
-    {
-      "path": "dist/vue2.esm.js",
-      "limit": "10 KB"
-    }
-  ],
-  "devDependencies": {
-    "@size-limit/preset-small-lib": "^8.1.2",
-    "@tsconfig/recommended": "^1.0.2",
-    "@types/lodash-es": "^4.17.7",
-    "dts-cli": "^2.0.0",
-    "husky": "^8.0.3",
-    "size-limit": "^8.1.2",
-    "tslib": "^2.5.0",
-    "typescript": "^5.0.4"
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/lib/index.js",
+  "module": "./dist/es/index.js",
+  "scripts": {
+    "prepare": "modern build",
+    "dev": "modern dev",
+    "build": "modern build",
+    "build:watch": "modern build -w",
+    "reset": "rimraf ./**/node_modules",
+    "lint": "modern lint",
+    "change": "modern change",
+    "bump": "modern bump",
+    "pre": "modern pre",
+    "change-status": "modern change-status",
+    "gen-release-note": "modern gen-release-note",
+    "release": "modern release",
+    "new": "modern new",
+    "upgrade": "modern upgrade"
   },
+  "eslintIgnore": [
+    "node_modules/",
+    "dist/"
+  ],
   "dependencies": {
     "lodash-es": "^4.17.21"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "@modern-js/eslint-config": "2.58.0",
+    "@modern-js/module-tools": "2.58.0",
+    "@types/lodash-es": "^4.17.7",
+    "@types/node": "~16.11.7",
+    "husky": "~8.0.1",
+    "lint-staged": "~13.1.0",
+    "prettier": "~2.8.1",
+    "rimraf": "~3.0.2",
+    "typescript": "~5.0.4"
+  },
+  "sideEffects": [],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
