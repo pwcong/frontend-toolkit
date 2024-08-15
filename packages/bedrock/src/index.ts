@@ -5,3 +5,4 @@ export * from './structure';
 export * from './lock';
 export * from './assert';
 export * from './error';
+export * from './undo-redo-stack';
