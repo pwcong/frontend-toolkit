@@ -1,2 +1,2 @@
 export { AbstractIdleValue, GlobalIdleValue } from './idle-value';
-export { Barrier, type IBarrier } from './barrier';
+export { Barrier, makeBarrierByPromise, type IBarrier } from './barrier';

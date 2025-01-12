@@ -38,3 +38,22 @@ export class Barrier {
     return this._promise;
   }
 }
+
+export function makeBarrierByPromise(
+  promise: Promise<any>,
+  openWhenReject = false,
+) {
+  const barrier = new Barrier();
+  promise.then(() => barrier.open());
+  if (openWhenReject) {
+    promise.catch(err => {
+      barrier.open();
+      throw err;
+    });
+  } else {
+    promise.catch(err => {
+      barrier.reject(err);
+    });
+  }
+  return barrier;
+}
