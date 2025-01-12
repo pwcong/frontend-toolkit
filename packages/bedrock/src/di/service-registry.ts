@@ -1,6 +1,6 @@
 import type { IBrandedService, ServiceIdentifier } from './base';
 import { SyncDescriptor } from './descriptor';
-import { ServiceCollection } from './service-cellection';
+import { ServiceCollection } from './service-collection';
 
 export enum InstantiationType {
   Eager = 0,

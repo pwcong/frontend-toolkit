@@ -1,5 +1,5 @@
 import { SyncDescriptor, SyncDescriptor0 } from './descriptor';
-import { ServiceCollection } from './service-cellection';
+import { ServiceCollection } from './service-collection';
 import {
   IBrandedService,
   createDecorator,

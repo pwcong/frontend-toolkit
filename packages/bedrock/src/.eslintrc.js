@@ -6,4 +6,10 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: ['../tsconfig.json'],
   },
+  rules: {
+    '@typescript-eslint/member-ordering': 'off',
+    '@typescript-eslint/no-parameter-properties': 'off',
+    '@typescript-eslint/no-redeclare': 'off',
+    'no-undef-init': 'off',
+  },
 };

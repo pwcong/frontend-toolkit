@@ -6,3 +6,5 @@ export * from './lock';
 export * from './assert';
 export * from './error';
 export * from './undo-redo-stack';
+export * from './container-service';
+export * from './job-scheduler';
